@@ -1,0 +1,59 @@
+---
+/*
+ * Importa o CSS global.
+ *
+ * Dessa forma o Astro consegue processar o CSS
+ * durante o build da aplicação.
+ */
+import "../styles/global.css";
+
+
+/*
+ * Define as propriedades que o Layout pode receber.
+ */
+interface Props {
+    titulo?: string;
+}
+
+
+/*
+ * Obtém as propriedades enviadas para o Layout.
+ *
+ * Se "titulo" não for informado, utiliza "Fotógrafo".
+ */
+const {
+    titulo = "Fotógrafo"
+} = Astro.props;
+---
+
+<!doctype html>
+
+<html lang="pt-BR">
+
+<head>
+
+    <!-- Define a codificação dos caracteres -->
+    <meta charset="UTF-8" />
+
+    <!-- Permite que o layout seja responsivo -->
+    <meta
+        name="viewport"
+        content="width=device-width"
+    />
+
+    <!-- Título da página -->
+    <title>{titulo}</title>
+
+</head>
+
+<body>
+
+    <!--
+        Slot é o local onde o conteúdo da página
+        será inserido.
+    -->
+    <slot />
+
+</body>
+
+</html>

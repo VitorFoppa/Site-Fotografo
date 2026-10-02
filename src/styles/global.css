@@ -1,0 +1,220 @@
+/* =========================================================
+   VARIÁVEIS GLOBAIS
+   ========================================================= */
+
+/*
+ * Centralizamos as principais cores do site aqui.
+ * Dessa forma, se quisermos alterar o tema posteriormente,
+ * podemos fazer isso em um único lugar.
+ */
+:root {
+    --cor-fundo: #faf9f7;
+    --cor-fundo-secundario: #f1efeb;
+
+    --cor-texto: #252525;
+    --cor-texto-secundario: #6b6863;
+
+    --cor-destaque: #9a7b5b;
+    --cor-destaque-hover: #806346;
+
+    --cor-branco: #ffffff;
+
+    --largura-conteudo: 1200px;
+
+    --espacamento-secao: 100px;
+}
+
+
+/* =========================================================
+   RESET
+   ========================================================= */
+
+/*
+ * Remove margens e paddings padrão do navegador.
+ *
+ * Isso nos dá maior controle sobre o layout.
+ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+/*
+ * Define o comportamento de rolagem suave
+ * quando o usuário navega para uma seção da página.
+ */
+html {
+    scroll-behavior: smooth;
+}
+
+
+/*
+ * Configuração geral do corpo da página.
+ */
+body {
+    background-color: var(--cor-fundo);
+
+    color: var(--cor-texto);
+
+    /*
+     * Utilizamos uma fonte do sistema inicialmente.
+     * Posteriormente podemos escolher uma fonte específica
+     * para deixar o site mais sofisticado.
+     */
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    line-height: 1.6;
+}
+
+
+/*
+ * Remove o sublinhado padrão dos links.
+ */
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+
+/*
+ * Faz com que imagens nunca ultrapassem
+ * o tamanho do elemento pai.
+ */
+img {
+    display: block;
+    max-width: 100%;
+}
+
+
+/* =========================================================
+   CONTAINER
+   ========================================================= */
+
+/*
+ * Mantém o conteúdo centralizado na tela.
+ *
+ * O max-width impede que o conteúdo fique muito largo
+ * em monitores grandes.
+ */
+.container {
+    width: min(
+        calc(100% - 40px),
+        var(--largura-conteudo)
+    );
+
+    margin: 0 auto;
+}
+
+
+/* =========================================================
+   SEÇÕES
+   ========================================================= */
+
+/*
+ * Espaçamento vertical padrão das seções.
+ */
+.secao {
+    padding: var(--espacamento-secao) 0;
+}
+
+
+/*
+ * Versão com fundo alternativo.
+ */
+.secao-alternativa {
+    background-color: var(--cor-fundo-secundario);
+}
+
+
+/* =========================================================
+   TÍTULOS
+   ========================================================= */
+
+.titulo-secao {
+    margin-bottom: 15px;
+
+    font-size: 2.2rem;
+
+    font-weight: 500;
+
+    letter-spacing: -0.02em;
+}
+
+
+.subtitulo-secao {
+    margin-bottom: 45px;
+
+    color: var(--cor-texto-secundario);
+
+    font-size: 1rem;
+}
+
+
+/* =========================================================
+   BOTÕES
+   ========================================================= */
+
+.botao {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 13px 25px;
+
+    border: 1px solid var(--cor-destaque);
+
+    background-color: var(--cor-destaque);
+
+    color: var(--cor-branco);
+
+    font-size: 0.9rem;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease;
+}
+
+
+/*
+ * Efeito quando o mouse passa sobre o botão.
+ */
+.botao:hover {
+    background-color: var(--cor-destaque-hover);
+
+    border-color: var(--cor-destaque-hover);
+}
+
+
+/* =========================================================
+   RESPONSIVIDADE
+   ========================================================= */
+
+/*
+ * Ajustes para celulares.
+ */
+@media (max-width: 768px) {
+
+    :root {
+        --espacamento-secao: 70px;
+    }
+
+    .container {
+        width: min(
+            calc(100% - 30px),
+            var(--largura-conteudo)
+        );
+    }
+
+    .titulo-secao {
+        font-size: 1.8rem;
+    }
+}

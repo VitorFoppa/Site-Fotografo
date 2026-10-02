@@ -1,17 +1,374 @@
 ---
+/*
+ * Importa o Layout principal.
+ *
+ * Ele fornece a estrutura HTML básica da página,
+ * incluindo o <head> e o <body>.
+ */
+import Layout from "../layouts/Layout.astro";
 
+
+/*
+ * Importa o cabeçalho reutilizável.
+ */
+import Header from "../components/Header.astro";
+
+
+/*
+ * Importa o rodapé reutilizável.
+ */
+import Footer from "../components/Footer.astro";
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+
+<!--
+    Todo o conteúdo desta página fica dentro
+    do Layout principal.
+-->
+<Layout titulo="Fotógrafo | Momentos que permanecem">
+
+    <!-- Cabeçalho -->
+    <Header />
+
+
+    <main>
+
+        <!-- =========================================
+             HERO
+             ========================================= -->
+
+        <section class="hero">
+
+            <div class="container hero-conteudo">
+
+                <div class="hero-texto">
+
+                    <p class="hero-legenda">
+                        FOTOGRAFIA
+                    </p>
+
+                    <h1>
+                        Momentos que
+                        permanecem.
+                    </h1>
+
+                    <p>
+                        Fotografia para transformar
+                        momentos especiais em
+                        memórias que duram para sempre.
+                    </p>
+
+                    <a
+                        href="/catalogo"
+                        class="botao"
+                    >
+                        Ver catálogo
+                    </a>
+
+                </div>
+
+
+                <!--
+                    Imagem provisória.
+
+                    Posteriormente essa imagem será
+                    carregada do Cloudflare R2.
+                -->
+                <div class="hero-imagem">
+
+                    <div class="imagem-placeholder">
+                        Sua foto principal
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================================
+             SOBRE
+             ========================================= -->
+
+        <section
+            id="sobre"
+            class="secao secao-alternativa"
+        >
+
+            <div class="container sobre">
+
+                <div>
+
+                    <p class="hero-legenda">
+                        SOBRE
+                    </p>
+
+                    <h2 class="titulo-secao">
+                        Fotografando histórias
+                    </h2>
+
+                </div>
+
+
+                <div>
+
+                    <p class="sobre-texto">
+                        Cada fotografia carrega uma
+                        história, uma emoção e um momento
+                        que merece ser lembrado.
+                    </p>
+
+                    <p class="sobre-texto">
+                        Meu trabalho é transformar esses
+                        momentos em imagens que possam
+                        ser revisitadas por muitos anos.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================================
+             GALERIA
+             ========================================= -->
+
+        <section class="secao">
+
+            <div class="container">
+
+                <p class="hero-legenda">
+                    PORTFÓLIO
+                </p>
+
+                <h2 class="titulo-secao">
+                    Alguns trabalhos
+                </h2>
+
+                <p class="subtitulo-secao">
+                    Uma seleção de momentos registrados.
+                </p>
+
+
+                <div class="galeria">
+
+                    <div class="foto-placeholder">
+                        Foto 01
+                    </div>
+
+                    <div class="foto-placeholder">
+                        Foto 02
+                    </div>
+
+                    <div class="foto-placeholder">
+                        Foto 03
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- Rodapé -->
+    <Footer />
+
+</Layout>
+
+
+<style>
+
+/*
+ * ========================================================
+ * HERO
+ * ========================================================
+ */
+
+.hero {
+    min-height: 700px;
+
+    display: flex;
+
+    align-items: center;
+}
+
+
+.hero-conteudo {
+    display: grid;
+
+    grid-template-columns: 0.8fr 1.2fr;
+
+    gap: 70px;
+
+    align-items: center;
+}
+
+
+.hero-texto {
+    max-width: 450px;
+}
+
+
+.hero-legenda {
+    margin-bottom: 15px;
+
+    color: var(--cor-destaque);
+
+    font-size: 0.75rem;
+
+    font-weight: 600;
+
+    letter-spacing: 0.2em;
+}
+
+
+.hero h1 {
+    margin-bottom: 25px;
+
+    font-size: clamp(3rem, 6vw, 5.5rem);
+
+    font-weight: 400;
+
+    line-height: 0.95;
+
+    letter-spacing: -0.04em;
+}
+
+
+.hero-texto > p:not(.hero-legenda) {
+    margin-bottom: 30px;
+
+    color: var(--cor-texto-secundario);
+
+    font-size: 1.05rem;
+}
+
+
+/*
+ * Área onde futuramente teremos a foto principal.
+ */
+.hero-imagem {
+    height: 600px;
+}
+
+
+.imagem-placeholder {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background-color: var(--cor-fundo-secundario);
+
+    color: var(--cor-texto-secundario);
+
+    font-size: 0.9rem;
+}
+
+
+/*
+ * ========================================================
+ * SOBRE
+ * ========================================================
+ */
+
+.sobre {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 100px;
+
+    align-items: start;
+}
+
+
+.sobre-texto {
+    margin-bottom: 20px;
+
+    color: var(--cor-texto-secundario);
+
+    font-size: 1.05rem;
+}
+
+
+/*
+ * ========================================================
+ * GALERIA
+ * ========================================================
+ */
+
+.galeria {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 20px;
+}
+
+
+.foto-placeholder {
+    aspect-ratio: 4 / 5;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background-color: var(--cor-fundo-secundario);
+
+    color: var(--cor-texto-secundario);
+}
+
+
+/*
+ * ========================================================
+ * RESPONSIVIDADE
+ * ========================================================
+ */
+
+@media (max-width: 768px) {
+
+    .hero {
+        min-height: auto;
+
+        padding: 70px 0;
+    }
+
+
+    .hero-conteudo {
+        grid-template-columns: 1fr;
+
+        gap: 40px;
+    }
+
+
+    .hero-imagem {
+        height: 450px;
+    }
+
+
+    .sobre {
+        grid-template-columns: 1fr;
+
+        gap: 30px;
+    }
+
+
+    .galeria {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+</style>

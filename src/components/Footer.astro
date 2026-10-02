@@ -1,0 +1,93 @@
+---
+/*
+ * Rodapé do site.
+ *
+ * Será reutilizado nas páginas públicas.
+ */
+---
+
+<footer class="footer">
+
+    <div class="container footer-conteudo">
+
+        <!-- Nome do fotógrafo -->
+        <p>
+            © {new Date().getFullYear()} Fotógrafo
+        </p>
+
+        <!--
+            Link para Instagram.
+            Posteriormente este endereço será
+            configurável pelo painel administrativo.
+        -->
+        <a
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            Instagram
+        </a>
+
+    </div>
+
+</footer>
+
+
+<style>
+
+/*
+ * Área do rodapé.
+ */
+.footer {
+    padding: 35px 0;
+
+    background-color: var(--cor-texto);
+
+    color: var(--cor-branco);
+}
+
+
+/*
+ * Organiza os elementos horizontalmente.
+ */
+.footer-conteudo {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+}
+
+
+/*
+ * Link do Instagram.
+ */
+.footer a {
+    opacity: 0.8;
+
+    transition: opacity 0.2s ease;
+}
+
+
+/*
+ * Aumenta a visibilidade quando o mouse passa.
+ */
+.footer a:hover {
+    opacity: 1;
+}
+
+
+/*
+ * Ajuste para celular.
+ */
+@media (max-width: 600px) {
+
+    .footer-conteudo {
+        flex-direction: column;
+
+        gap: 10px;
+    }
+
+}
+
+</style>

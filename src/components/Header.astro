@@ -1,0 +1,144 @@
+---
+/*
+ * Header principal do site.
+ *
+ * Este componente será reutilizado pelas páginas
+ * públicas do fotógrafo.
+ */
+---
+
+<header class="header">
+
+    <div class="container header-conteudo">
+
+        <!--
+            Nome/logo do fotógrafo.
+            
+            Posteriormente podemos transformar isso
+            em uma imagem de logotipo através do painel.
+        -->
+        <a
+            href="/"
+            class="logo"
+        >
+            FOTÓGRAFO
+        </a>
+
+
+        <!-- Menu principal -->
+        <nav class="menu">
+
+            <!-- Link para a Home -->
+            <a href="/">
+                Início
+            </a>
+
+            <!-- Link para o catálogo -->
+            <a href="/catalogo">
+                Catálogo
+            </a>
+
+            <!-- Link para a seção sobre -->
+            <a href="/#sobre">
+                Sobre
+            </a>
+
+        </nav>
+
+    </div>
+
+</header>
+
+
+<style>
+
+/*
+ * Cabeçalho principal.
+ */
+.header {
+    width: 100%;
+
+    background-color: var(--cor-fundo);
+
+    border-bottom: 1px solid #e8e5e1;
+}
+
+
+/*
+ * Organiza logo e menu horizontalmente.
+ */
+.header-conteudo {
+    min-height: 75px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+}
+
+
+/*
+ * Nome do fotógrafo.
+ */
+.logo {
+    font-size: 1rem;
+
+    font-weight: 600;
+
+    letter-spacing: 0.12em;
+}
+
+
+/*
+ * Menu de navegação.
+ */
+.menu {
+    display: flex;
+
+    align-items: center;
+
+    gap: 30px;
+}
+
+
+/*
+ * Links do menu.
+ */
+.menu a {
+    color: var(--cor-texto-secundario);
+
+    font-size: 0.9rem;
+
+    transition: color 0.2s ease;
+}
+
+
+/*
+ * Efeito visual ao passar o mouse.
+ */
+.menu a:hover {
+    color: var(--cor-texto);
+}
+
+
+/*
+ * Menu para telas pequenas.
+ */
+@media (max-width: 600px) {
+
+    .header-conteudo {
+        min-height: 65px;
+    }
+
+    .menu {
+        gap: 15px;
+    }
+
+    .menu a {
+        font-size: 0.8rem;
+    }
+
+}
+
+</style>
