@@ -1,63 +1,87 @@
 ---
 /*
- * Importa o Layout principal.
+ * Importa o Layout principal da aplicação.
  *
- * Ele fornece a estrutura HTML básica da página,
- * incluindo o <head> e o <body>.
+ * O Layout contém a estrutura HTML básica
+ * compartilhada pelas páginas.
  */
 import Layout from "../layouts/Layout.astro";
 
 
 /*
- * Importa o cabeçalho reutilizável.
+ * Importa o Header utilizado nas páginas públicas.
  */
 import Header from "../components/Header.astro";
 
 
 /*
- * Importa o rodapé reutilizável.
+ * Importa o Footer utilizado nas páginas públicas.
  */
 import Footer from "../components/Footer.astro";
 ---
 
 
 <!--
-    Todo o conteúdo desta página fica dentro
-    do Layout principal.
+    Layout principal da Home.
 -->
 <Layout titulo="Fotógrafo | Momentos que permanecem">
 
-    <!-- Cabeçalho -->
+
+    <!-- ==================================================
+         HEADER
+         ================================================== -->
+
     <Header />
 
 
     <main>
 
-        <!-- =========================================
+
+        <!-- ==================================================
              HERO
-             ========================================= -->
+             ================================================== -->
 
         <section class="hero">
 
             <div class="container hero-conteudo">
 
+
+                <!-- Texto principal -->
+
                 <div class="hero-texto">
 
+                    <!-- Pequena identificação da seção -->
                     <p class="hero-legenda">
                         FOTOGRAFIA
                     </p>
 
+
+                    <!--
+                        Título principal.
+
+                        Posteriormente esse conteúdo poderá
+                        ser configurado pelo administrador.
+                    -->
                     <h1>
-                        Momentos que
-                        permanecem.
+                        Momentos que permanecem.
                     </h1>
 
-                    <p>
-                        Fotografia para transformar
-                        momentos especiais em
-                        memórias que duram para sempre.
+
+                    <!-- Descrição principal -->
+                    <p class="hero-descricao">
+
+                        Fotografando histórias,
+                        pessoas e momentos especiais
+                        para transformar lembranças
+                        em imagens.
+
                     </p>
 
+
+                    <!--
+                        Botão que leva o visitante
+                        para o catálogo.
+                    -->
                     <a
                         href="/catalogo"
                         class="botao"
@@ -68,16 +92,26 @@ import Footer from "../components/Footer.astro";
                 </div>
 
 
-                <!--
-                    Imagem provisória.
+                <!-- Imagem principal -->
 
-                    Posteriormente essa imagem será
-                    carregada do Cloudflare R2.
-                -->
                 <div class="hero-imagem">
 
+                    <!--
+                        Por enquanto utilizamos
+                        um placeholder.
+
+                        Posteriormente:
+
+                        R2
+                         ↓
+                        URL da imagem
+                         ↓
+                        <img>
+                    -->
                     <div class="imagem-placeholder">
-                        Sua foto principal
+
+                        FOTO PRINCIPAL
+
                     </div>
 
                 </div>
@@ -87,9 +121,10 @@ import Footer from "../components/Footer.astro";
         </section>
 
 
-        <!-- =========================================
+
+        <!-- ==================================================
              SOBRE
-             ========================================= -->
+             ================================================== -->
 
         <section
             id="sobre"
@@ -98,31 +133,50 @@ import Footer from "../components/Footer.astro";
 
             <div class="container sobre">
 
-                <div>
+
+                <!-- Foto do fotógrafo -->
+
+                <div class="sobre-imagem">
+
+                    <div class="imagem-placeholder">
+
+                        FOTO DO FOTÓGRAFO
+
+                    </div>
+
+                </div>
+
+
+                <!-- Texto sobre -->
+
+                <div class="sobre-conteudo">
 
                     <p class="hero-legenda">
                         SOBRE
                     </p>
 
+
                     <h2 class="titulo-secao">
-                        Fotografando histórias
+                        Fotografando histórias.
                     </h2>
 
-                </div>
-
-
-                <div>
 
                     <p class="sobre-texto">
-                        Cada fotografia carrega uma
-                        história, uma emoção e um momento
-                        que merece ser lembrado.
+
+                        A fotografia é uma forma de
+                        preservar momentos que não
+                        podem ser repetidos.
+
                     </p>
 
+
                     <p class="sobre-texto">
-                        Meu trabalho é transformar esses
-                        momentos em imagens que possam
-                        ser revisitadas por muitos anos.
+
+                        Meu objetivo é registrar cada
+                        história de maneira natural,
+                        criando imagens que transmitam
+                        a emoção daquele momento.
+
                     </p>
 
                 </div>
@@ -132,40 +186,94 @@ import Footer from "../components/Footer.astro";
         </section>
 
 
-        <!-- =========================================
-             GALERIA
-             ========================================= -->
+
+        <!-- ==================================================
+             PORTFÓLIO
+             ================================================== -->
 
         <section class="secao">
 
             <div class="container">
 
+
+                <!-- Título -->
+
                 <p class="hero-legenda">
                     PORTFÓLIO
                 </p>
+
 
                 <h2 class="titulo-secao">
                     Alguns trabalhos
                 </h2>
 
+
                 <p class="subtitulo-secao">
-                    Uma seleção de momentos registrados.
+
+                    Uma seleção de momentos
+                    registrados.
+
                 </p>
 
 
+                <!-- Galeria -->
+
                 <div class="galeria">
 
-                    <div class="foto-placeholder">
-                        Foto 01
-                    </div>
+
+                    <!-- FOTO 01 -->
 
                     <div class="foto-placeholder">
-                        Foto 02
+
+                        FOTO 01
+
                     </div>
 
+
+                    <!-- FOTO 02 -->
+
                     <div class="foto-placeholder">
-                        Foto 03
+
+                        FOTO 02
+
                     </div>
+
+
+                    <!-- FOTO 03 -->
+
+                    <div class="foto-placeholder">
+
+                        FOTO 03
+
+                    </div>
+
+
+                    <!-- FOTO 04 -->
+
+                    <div class="foto-placeholder">
+
+                        FOTO 04
+
+                    </div>
+
+
+                    <!-- FOTO 05 -->
+
+                    <div class="foto-placeholder">
+
+                        FOTO 05
+
+                    </div>
+
+
+                    <!-- FOTO 06 -->
+
+                    <div class="foto-placeholder">
+
+                        FOTO 06
+
+                    </div>
+
 
                 </div>
 
@@ -173,13 +281,18 @@ import Footer from "../components/Footer.astro";
 
         </section>
 
+
     </main>
 
 
-    <!-- Rodapé -->
+    <!-- ==================================================
+         FOOTER
+         ================================================== -->
+
     <Footer />
 
 </Layout>
+
 
 
 <style>
@@ -191,31 +304,60 @@ import Footer from "../components/Footer.astro";
  */
 
 .hero {
-    min-height: 700px;
 
+    /*
+     * Define uma altura confortável para
+     * a primeira seção.
+     */
+    min-height: 720px;
+
+    /*
+     * Centraliza verticalmente o conteúdo.
+     */
     display: flex;
 
     align-items: center;
+
 }
 
 
+/*
+ * Organiza texto e imagem lado a lado.
+ */
 .hero-conteudo {
+
     display: grid;
 
+    /*
+     * A imagem ocupa mais espaço que o texto.
+     */
     grid-template-columns: 0.8fr 1.2fr;
 
+    /*
+     * Espaço entre as duas colunas.
+     */
     gap: 70px;
 
     align-items: center;
+
 }
 
 
+/*
+ * Limita a largura do texto.
+ */
 .hero-texto {
+
     max-width: 450px;
+
 }
 
 
+/*
+ * Pequena identificação acima do título.
+ */
 .hero-legenda {
+
     margin-bottom: 15px;
 
     color: var(--cor-destaque);
@@ -225,53 +367,92 @@ import Footer from "../components/Footer.astro";
     font-weight: 600;
 
     letter-spacing: 0.2em;
+
 }
 
 
+/*
+ * Título principal.
+ */
 .hero h1 {
-    margin-bottom: 25px;
 
-    font-size: clamp(3rem, 6vw, 5.5rem);
+    margin-bottom: 28px;
+
+    /*
+     * clamp permite que o tamanho
+     * se adapte ao tamanho da tela.
+     */
+    font-size: clamp(
+        3rem,
+        6vw,
+        5.5rem
+    );
 
     font-weight: 400;
 
     line-height: 0.95;
 
     letter-spacing: -0.04em;
-}
 
-
-.hero-texto > p:not(.hero-legenda) {
-    margin-bottom: 30px;
-
-    color: var(--cor-texto-secundario);
-
-    font-size: 1.05rem;
 }
 
 
 /*
- * Área onde futuramente teremos a foto principal.
+ * Texto abaixo do título.
  */
-.hero-imagem {
-    height: 600px;
+.hero-descricao {
+
+    margin-bottom: 32px;
+
+    color: var(--cor-texto-secundario);
+
+    font-size: 1.05rem;
+
 }
 
 
+/*
+ * ========================================================
+ * IMAGENS
+ * ========================================================
+ */
+
+.hero-imagem {
+
+    /*
+     * Altura da foto principal.
+     */
+    height: 620px;
+
+}
+
+
+/*
+ * Placeholder utilizado enquanto
+ * ainda não temos imagens no R2.
+ */
 .imagem-placeholder {
+
     width: 100%;
+
     height: 100%;
 
     display: flex;
 
     align-items: center;
+
     justify-content: center;
 
-    background-color: var(--cor-fundo-secundario);
+    background-color:
+        var(--cor-fundo-secundario);
 
-    color: var(--cor-texto-secundario);
+    color:
+        var(--cor-texto-secundario);
 
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+
+    letter-spacing: 0.08em;
+
 }
 
 
@@ -282,22 +463,50 @@ import Footer from "../components/Footer.astro";
  */
 
 .sobre {
+
     display: grid;
 
     grid-template-columns: 1fr 1fr;
 
     gap: 100px;
 
-    align-items: start;
+    align-items: center;
+
 }
 
 
+/*
+ * Área da foto do fotógrafo.
+ */
+.sobre-imagem {
+
+    height: 500px;
+
+}
+
+
+/*
+ * Conteúdo textual da seção.
+ */
+.sobre-conteudo {
+
+    max-width: 500px;
+
+}
+
+
+/*
+ * Parágrafos da seção Sobre.
+ */
 .sobre-texto {
+
     margin-bottom: 20px;
 
-    color: var(--cor-texto-secundario);
+    color:
+        var(--cor-texto-secundario);
 
     font-size: 1.05rem;
+
 }
 
 
@@ -308,26 +517,58 @@ import Footer from "../components/Footer.astro";
  */
 
 .galeria {
+
     display: grid;
 
+    /*
+     * Três imagens por linha.
+     */
     grid-template-columns:
         repeat(3, 1fr);
 
     gap: 20px;
+
 }
 
 
+/*
+ * Cada foto da galeria.
+ */
 .foto-placeholder {
+
+    /*
+     * Mantém todas as fotos
+     * com a mesma proporção.
+     */
     aspect-ratio: 4 / 5;
 
     display: flex;
 
     align-items: center;
+
     justify-content: center;
 
-    background-color: var(--cor-fundo-secundario);
+    background-color:
+        var(--cor-fundo-secundario);
 
-    color: var(--cor-texto-secundario);
+    color:
+        var(--cor-texto-secundario);
+
+    font-size: 0.85rem;
+
+    transition:
+        transform 0.3s ease;
+
+}
+
+
+/*
+ * Pequeno efeito ao passar o mouse.
+ */
+.foto-placeholder:hover {
+
+    transform: translateY(-4px);
+
 }
 
 
@@ -339,34 +580,105 @@ import Footer from "../components/Footer.astro";
 
 @media (max-width: 768px) {
 
+
+    /*
+     * Reduz a altura do Hero.
+     */
     .hero {
+
         min-height: auto;
 
-        padding: 70px 0;
+        padding: 80px 0;
+
     }
 
 
+    /*
+     * Coloca texto e imagem
+     * um abaixo do outro.
+     */
     .hero-conteudo {
+
         grid-template-columns: 1fr;
 
-        gap: 40px;
+        gap: 45px;
+
     }
 
 
+    /*
+     * Reduz a altura da imagem
+     * no celular.
+     */
     .hero-imagem {
+
         height: 450px;
+
     }
 
 
+    /*
+     * Sobre também passa para
+     * uma única coluna.
+     */
     .sobre {
+
         grid-template-columns: 1fr;
 
-        gap: 30px;
+        gap: 45px;
+
     }
 
 
+    /*
+     * Reduz a altura da foto.
+     */
+    .sobre-imagem {
+
+        height: 400px;
+
+    }
+
+
+    /*
+     * Galeria passa para duas colunas.
+     */
     .galeria {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+    }
+
+}
+
+
+/*
+ * ========================================================
+ * CELULARES PEQUENOS
+ * ========================================================
+ */
+
+@media (max-width: 480px) {
+
+
+    /*
+     * Galeria passa para uma coluna.
+     */
+    .galeria {
+
         grid-template-columns: 1fr;
+
+    }
+
+
+    /*
+     * Hero um pouco menor.
+     */
+    .hero h1 {
+
+        font-size: 3rem;
+
     }
 
 }

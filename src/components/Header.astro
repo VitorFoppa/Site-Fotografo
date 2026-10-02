@@ -2,8 +2,13 @@
 /*
  * Header principal do site.
  *
- * Este componente será reutilizado pelas páginas
- * públicas do fotógrafo.
+ * Este componente aparece nas páginas públicas:
+ *
+ * - Home
+ * - Catálogo
+ *
+ * O painel administrativo terá posteriormente
+ * seu próprio layout.
  */
 ---
 
@@ -12,21 +17,27 @@
     <div class="container header-conteudo">
 
         <!--
-            Nome/logo do fotógrafo.
-            
-            Posteriormente podemos transformar isso
-            em uma imagem de logotipo através do painel.
+            Nome ou logotipo do fotógrafo.
+
+            Posteriormente poderemos permitir que o
+            fotógrafo altere esse nome pelo painel.
         -->
         <a
             href="/"
             class="logo"
+            aria-label="Página inicial"
         >
             FOTÓGRAFO
         </a>
 
 
-        <!-- Menu principal -->
-        <nav class="menu">
+        <!--
+            Navegação principal do site.
+        -->
+        <nav
+            class="menu"
+            aria-label="Navegação principal"
+        >
 
             <!-- Link para a Home -->
             <a href="/">
@@ -38,7 +49,12 @@
                 Catálogo
             </a>
 
-            <!-- Link para a seção sobre -->
+            <!--
+                Link para a seção Sobre da Home.
+
+                O #sobre faz o navegador rolar
+                diretamente até essa seção.
+            -->
             <a href="/#sobre">
                 Sobre
             </a>
@@ -53,92 +69,173 @@
 <style>
 
 /*
- * Cabeçalho principal.
+ * ========================================================
+ * HEADER
+ * ========================================================
  */
+
 .header {
+
+    /*
+     * Mantém o cabeçalho ocupando toda
+     * a largura da tela.
+     */
     width: 100%;
 
+    /*
+     * Mantém a cor clara do restante do site.
+     */
     background-color: var(--cor-fundo);
 
+    /*
+     * Linha discreta separando o menu
+     * do restante da página.
+     */
     border-bottom: 1px solid #e8e5e1;
+
 }
 
 
 /*
- * Organiza logo e menu horizontalmente.
+ * Container interno do Header.
  */
 .header-conteudo {
-    min-height: 75px;
 
+    /*
+     * Altura mínima do cabeçalho.
+     */
+    min-height: 78px;
+
+    /*
+     * Coloca logo e menu lado a lado.
+     */
     display: flex;
 
+    /*
+     * Centraliza verticalmente os elementos.
+     */
     align-items: center;
 
+    /*
+     * Coloca o logo de um lado e
+     * o menu do outro.
+     */
     justify-content: space-between;
+
 }
 
 
 /*
- * Nome do fotógrafo.
+ * ========================================================
+ * LOGO
+ * ========================================================
  */
+
 .logo {
+
+    /*
+     * Tamanho do nome.
+     */
     font-size: 1rem;
 
+    /*
+     * Deixa o nome ligeiramente mais forte.
+     */
     font-weight: 600;
 
-    letter-spacing: 0.12em;
+    /*
+     * Aumenta o espaçamento entre as letras.
+     */
+    letter-spacing: 0.15em;
+
 }
 
 
 /*
- * Menu de navegação.
+ * ========================================================
+ * MENU
+ * ========================================================
  */
+
 .menu {
+
+    /*
+     * Coloca os links horizontalmente.
+     */
     display: flex;
 
+    /*
+     * Espaçamento entre os links.
+     */
+    gap: 32px;
+
+    /*
+     * Alinha verticalmente os links.
+     */
     align-items: center;
 
-    gap: 30px;
 }
 
 
 /*
- * Links do menu.
+ * Estilo dos links.
  */
 .menu a {
+
     color: var(--cor-texto-secundario);
 
     font-size: 0.9rem;
 
+    /*
+     * Faz a mudança de cor acontecer
+     * suavemente.
+     */
     transition: color 0.2s ease;
+
 }
 
 
 /*
- * Efeito visual ao passar o mouse.
+ * Efeito ao passar o mouse.
  */
 .menu a:hover {
+
     color: var(--cor-texto);
+
 }
 
 
 /*
- * Menu para telas pequenas.
+ * ========================================================
+ * RESPONSIVIDADE
+ * ========================================================
  */
+
 @media (max-width: 600px) {
 
+    /*
+     * Reduzimos a altura do Header
+     * em telas pequenas.
+     */
     .header-conteudo {
-        min-height: 65px;
+        min-height: 68px;
     }
 
+
+    /*
+     * Diminuímos o espaço entre os links.
+     */
     .menu {
-        gap: 15px;
+        gap: 16px;
     }
 
+
+    /*
+     * Reduzimos o tamanho da fonte.
+     */
     .menu a {
         font-size: 0.8rem;
     }
 
 }
-
 </style>
