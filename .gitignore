@@ -24,3 +24,5 @@ pnpm-debug.log*
 .idea/
 
 .wrangler/state/
+
+proton-recovery-phrase.pdf

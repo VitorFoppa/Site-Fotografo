@@ -10,5 +10,19 @@
 	},
 	"observability": {
 		"enabled": true
-	}
+	},
+
+	    // Banco de dados D1 utilizado pelo projeto.
+    "d1_databases": [
+        {
+            // Nome que usaremos no código para acessar o banco.
+            "binding": "catalogo_fotografo_db",
+
+            // Nome do banco criado no Cloudflare.
+            "database_name": "catalogo-fotografo-db",
+
+            // ID REAL fornecido pelo comando "wrangler d1 create".
+            "database_id": "98e2df33-b7fd-464c-a166-7ef3ff4362fa"
+        }
+    ]
 }
