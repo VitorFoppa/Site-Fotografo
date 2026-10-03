@@ -1,0 +1,489 @@
+---
+/*
+ * Define os dados que um card de plano precisa receber.
+ *
+ * Posteriormente esses dados virão do banco D1.
+ */
+interface Props {
+
+    /*
+     * Nome do plano.
+     */
+    nome: string;
+
+    /*
+     * Descrição resumida do plano.
+     */
+    descricao: string;
+
+    /*
+     * Preço exibido para o cliente.
+     */
+    preco: string;
+
+    /*
+     * Lista de itens incluídos no plano.
+     */
+    itens: string[];
+
+    /*
+     * Indica se o plano deve aparecer
+     * visualmente como destaque.
+     */
+    destaque?: boolean;
+
+    /*
+     * Texto opcional para o botão.
+     */
+    textoBotao?: string;
+
+}
+
+
+/*
+ * Recebe as propriedades enviadas pela página.
+ *
+ * Caso "destaque" não seja informado,
+ * consideramos que o plano não é destaque.
+ */
+const {
+
+    nome,
+
+    descricao,
+
+    preco,
+
+    itens,
+
+    destaque = false,
+
+    textoBotao = "Tenho interesse"
+
+} = Astro.props;
+
+---
+
+<!--
+    Cada plano é representado por um article.
+
+    Article é semanticamente apropriado porque
+    o card representa uma informação independente.
+-->
+<article
+    class:list={[
+        "plano-card",
+
+        /*
+         * Se destaque for true, adicionamos
+         * a classe CSS "destaque".
+         */
+        {
+            destaque
+        }
+    ]}
+>
+
+
+    <!-- ==================================================
+         FOTO DO PLANO
+         ================================================== -->
+
+    <div class="plano-imagem">
+
+        <!--
+            Por enquanto utilizamos um placeholder.
+
+            Na etapa R2 essa área receberá
+            a URL da foto armazenada no Cloudflare R2.
+        -->
+        <div class="imagem-placeholder">
+
+            FOTO DO PLANO
+
+        </div>
+
+    </div>
+
+
+    <!-- ==================================================
+         CONTEÚDO
+         ================================================== -->
+
+    <div class="plano-conteudo">
+
+
+        <!-- Nome do plano -->
+
+        <h2 class="plano-nome">
+
+            {nome}
+
+        </h2>
+
+
+        <!-- Descrição -->
+
+        <p class="plano-descricao">
+
+            {descricao}
+
+        </p>
+
+
+        <!-- ==================================================
+             ITENS INCLUSOS
+             ================================================== -->
+
+        <ul class="plano-itens">
+
+            {
+                /*
+                 * Percorre todos os itens recebidos
+                 * pelo componente.
+                 */
+                itens.map((item) => (
+
+                    <li>
+
+                        <!--
+                            Símbolo visual indicando
+                            que o item está incluído.
+                        -->
+                        <span
+                            class="check"
+                            aria-hidden="true"
+                        >
+                            ✓
+                        </span>
+
+                        {item}
+
+                    </li>
+
+                ))
+            }
+
+        </ul>
+
+
+        <!-- ==================================================
+             PREÇO
+             ================================================== -->
+
+        <div class="plano-preco">
+
+            <span class="preco-label">
+                A partir de
+            </span>
+
+            <strong>
+                {preco}
+            </strong>
+
+        </div>
+
+
+        <!-- ==================================================
+             BOTÃO
+             ================================================== -->
+
+        <a
+            href="#contato"
+            class="botao plano-botao"
+        >
+
+            {textoBotao}
+
+        </a>
+
+    </div>
+
+</article>
+
+
+<style>
+
+/*
+ * ========================================================
+ * CARD
+ * ========================================================
+ */
+
+.plano-card {
+
+    /*
+     * Fundo branco para destacar o card
+     * do fundo geral da página.
+     */
+    background-color: var(--cor-branco);
+
+    /*
+     * Borda muito discreta.
+     */
+    border: 1px solid #e5e2dd;
+
+    /*
+     * Mantém os elementos internos
+     * organizados verticalmente.
+     */
+    display: flex;
+
+    flex-direction: column;
+
+    /*
+     * Transição utilizada pelo efeito
+     * de hover.
+     */
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+
+}
+
+
+/*
+ * Efeito ao passar o mouse.
+ */
+.plano-card:hover {
+
+    transform: translateY(-5px);
+
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.07);
+
+}
+
+
+/*
+ * ========================================================
+ * DESTAQUE
+ * ========================================================
+ */
+
+/*
+ * O plano marcado como destaque
+ * recebe uma borda diferente.
+ */
+.plano-card.destaque {
+
+    border-color: var(--cor-destaque);
+
+}
+
+
+/*
+ * ========================================================
+ * IMAGEM
+ * ========================================================
+ */
+
+.plano-imagem {
+
+    aspect-ratio: 4 / 3;
+
+}
+
+
+/*
+ * Placeholder da imagem.
+ */
+.imagem-placeholder {
+
+    width: 100%;
+
+    height: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background-color:
+        var(--cor-fundo-secundario);
+
+    color:
+        var(--cor-texto-secundario);
+
+    font-size: 0.75rem;
+
+    letter-spacing: 0.08em;
+
+}
+
+
+/*
+ * ========================================================
+ * CONTEÚDO
+ * ========================================================
+ */
+
+.plano-conteudo {
+
+    /*
+     * Espaçamento interno do card.
+     */
+    padding: 30px;
+
+    /*
+     * Faz o conteúdo ocupar o restante
+     * da altura do card.
+     */
+    display: flex;
+
+    flex-direction: column;
+
+    flex: 1;
+
+}
+
+
+/*
+ * Nome do plano.
+ */
+.plano-nome {
+
+    margin-bottom: 10px;
+
+    font-size: 1.35rem;
+
+    font-weight: 500;
+
+}
+
+
+/*
+ * Descrição.
+ */
+.plano-descricao {
+
+    min-height: 55px;
+
+    margin-bottom: 25px;
+
+    color:
+        var(--cor-texto-secundario);
+
+    font-size: 0.9rem;
+
+}
+
+
+/*
+ * ========================================================
+ * LISTA DE ITENS
+ * ========================================================
+ */
+
+.plano-itens {
+
+    /*
+     * Remove os marcadores padrão da lista.
+     */
+    list-style: none;
+
+    margin-bottom: 30px;
+
+}
+
+
+.plano-itens li {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 10px;
+
+    color:
+        var(--cor-texto-secundario);
+
+    font-size: 0.9rem;
+
+}
+
+
+/*
+ * Símbolo de confirmação.
+ */
+.check {
+
+    color:
+        var(--cor-destaque);
+
+    font-weight: 600;
+
+}
+
+
+/*
+ * ========================================================
+ * PREÇO
+ * ========================================================
+ */
+
+.plano-preco {
+
+    margin-top: auto;
+
+    margin-bottom: 25px;
+
+}
+
+
+.preco-label {
+
+    display: block;
+
+    margin-bottom: 3px;
+
+    color:
+        var(--cor-texto-secundario);
+
+    font-size: 0.75rem;
+
+}
+
+
+.plano-preco strong {
+
+    font-size: 1.7rem;
+
+    font-weight: 500;
+
+}
+
+
+/*
+ * ========================================================
+ * BOTÃO
+ * ========================================================
+ */
+
+.plano-botao {
+
+    width: 100%;
+
+}
+
+
+/*
+ * ========================================================
+ * MOBILE
+ * ========================================================
+ */
+
+@media (max-width: 600px) {
+
+    .plano-conteudo {
+
+        padding: 25px;
+
+    }
+
+}
+
+</style>

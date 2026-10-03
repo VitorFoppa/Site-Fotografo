@@ -1,0 +1,437 @@
+---
+/*
+ * Importa o Layout principal.
+ */
+import Layout from "../layouts/Layout.astro";
+
+
+/*
+ * Importa o Header.
+ */
+import Header from "../components/Header.astro";
+
+
+/*
+ * Importa o Footer.
+ */
+import Footer from "../components/Footer.astro";
+
+
+/*
+ * Importa o componente responsável
+ * por exibir cada plano.
+ */
+import PlanoCard from "../components/PlanoCard.astro";
+
+
+/*
+ * ========================================================
+ * DADOS TEMPORÁRIOS
+ * ========================================================
+ *
+ * Neste momento os planos estão escritos diretamente
+ * no código apenas para construirmos a interface.
+ *
+ * Na etapa D1 esses dados serão retirados daqui.
+ *
+ * O fluxo final será:
+ *
+ * D1
+ *  ↓
+ * Worker
+ *  ↓
+ * Astro
+ *  ↓
+ * PlanoCard
+ *
+ */
+
+
+/*
+ * Lista temporária de planos.
+ */
+const planos = [
+
+    {
+        nome: "Ensaio",
+
+        descricao:
+            "Um ensaio pensado para registrar sua personalidade e seus momentos especiais.",
+
+        preco: "R$ 450,00",
+
+        itens: [
+            "1 hora de sessão",
+            "20 fotos editadas",
+            "Entrega digital",
+            "Local à escolha"
+        ],
+
+        destaque: false
+    },
+
+
+    {
+        nome: "Casamento",
+
+        descricao:
+            "Cobertura completa para registrar cada momento importante do seu casamento.",
+
+        preco: "R$ 2.500,00",
+
+        itens: [
+            "Até 8 horas de cobertura",
+            "300 fotos editadas",
+            "Entrega digital",
+            "Galeria online"
+        ],
+
+        destaque: true
+    },
+
+
+    {
+        nome: "Formatura",
+
+        descricao:
+            "Registre sua formatura com uma cobertura pensada para esse momento especial.",
+
+        preco: "R$ 900,00",
+
+        itens: [
+            "Até 3 horas de cobertura",
+            "80 fotos editadas",
+            "Entrega digital",
+            "Galeria online"
+        ],
+
+        destaque: false
+    }
+
+];
+
+---
+
+<Layout titulo="Catálogo | Fotógrafo">
+
+
+    <!-- Header -->
+
+    <Header />
+
+
+    <main>
+
+
+        <!-- ==================================================
+             CABEÇALHO DO CATÁLOGO
+             ================================================== -->
+
+        <section class="catalogo-header">
+
+            <div class="container">
+
+                <p class="hero-legenda">
+                    CATÁLOGO
+                </p>
+
+
+                <h1>
+                    Encontre o plano
+                    ideal para seu momento.
+                </h1>
+
+
+                <p class="catalogo-introducao">
+
+                    Escolha a opção que melhor combina
+                    com o que você deseja registrar.
+                    Se precisar, entre em contato para
+                    montarmos uma proposta personalizada.
+
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==================================================
+             PLANOS
+             ================================================== -->
+
+        <section class="secao">
+
+            <div class="container">
+
+
+                <div class="planos">
+
+
+                    {
+                        /*
+                         * Percorremos o array de planos.
+                         *
+                         * Para cada plano criamos um
+                         * componente PlanoCard.
+                         */
+                        planos.map((plano) => (
+
+                            <PlanoCard
+
+                                nome={plano.nome}
+
+                                descricao={plano.descricao}
+
+                                preco={plano.preco}
+
+                                itens={plano.itens}
+
+                                destaque={plano.destaque}
+
+                            />
+
+                        ))
+                    }
+
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==================================================
+             CONTATO
+             ================================================== -->
+
+        <section
+            id="contato"
+            class="contato"
+        >
+
+            <div class="container contato-conteudo">
+
+
+                <p class="hero-legenda">
+                    VAMOS CONVERSAR?
+                </p>
+
+
+                <h2>
+                    Vamos registrar
+                    seu próximo momento?
+                </h2>
+
+
+                <p>
+
+                    Entre em contato para tirar dúvidas
+                    ou solicitar uma proposta personalizada.
+
+                </p>
+
+
+                <!--
+                    Posteriormente esse link poderá
+                    ser configurado pelo administrador.
+                -->
+                <a
+                    href="#"
+                    class="botao"
+                >
+                    Entrar em contato
+                </a>
+
+
+            </div>
+
+        </section>
+
+
+    </main>
+
+
+    <!-- Footer -->
+
+    <Footer />
+
+</Layout>
+
+
+
+<style>
+
+/*
+ * ========================================================
+ * CABEÇALHO
+ * ========================================================
+ */
+
+.catalogo-header {
+
+    padding:
+        120px 0 80px;
+
+}
+
+
+.catalogo-header h1 {
+
+    max-width: 700px;
+
+    margin-bottom: 25px;
+
+    font-size: clamp(
+        2.8rem,
+        6vw,
+        5rem
+    );
+
+    font-weight: 400;
+
+    line-height: 1;
+
+    letter-spacing: -0.04em;
+
+}
+
+
+.catalogo-introducao {
+
+    max-width: 600px;
+
+    color:
+        var(--cor-texto-secundario);
+
+    font-size: 1.05rem;
+
+}
+
+
+/*
+ * ========================================================
+ * PLANOS
+ * ========================================================
+ */
+
+.planos {
+
+    display: grid;
+
+    /*
+     * Três cards em telas grandes.
+     */
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 25px;
+
+}
+
+
+/*
+ * ========================================================
+ * CONTATO
+ * ========================================================
+ */
+
+.contato {
+
+    padding: 100px 0;
+
+    background-color:
+        var(--cor-fundo-secundario);
+
+}
+
+
+.contato-conteudo {
+
+    max-width: 700px;
+
+    text-align: center;
+
+}
+
+
+.contato h2 {
+
+    margin-bottom: 20px;
+
+    font-size: clamp(
+        2.3rem,
+        5vw,
+        4rem
+    );
+
+    font-weight: 400;
+
+    line-height: 1;
+
+}
+
+
+.contato p:not(.hero-legenda) {
+
+    margin-bottom: 30px;
+
+    color:
+        var(--cor-texto-secundario);
+
+}
+
+
+/*
+ * ========================================================
+ * RESPONSIVIDADE
+ * ========================================================
+ */
+
+@media (max-width: 900px) {
+
+    /*
+     * Em telas médias passamos para
+     * dois cards por linha.
+     */
+    .planos {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .catalogo-header {
+
+        padding:
+            80px 0 50px;
+
+    }
+
+
+    /*
+     * Em celulares os cards ficam
+     * um abaixo do outro.
+     */
+    .planos {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .contato {
+
+        padding: 80px 0;
+
+    }
+
+}
+
+</style>
