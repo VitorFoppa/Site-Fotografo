@@ -1,686 +1,357 @@
 ---
 /*
  * Importa o Layout principal da aplicação.
- *
- * O Layout contém a estrutura HTML básica
- * compartilhada pelas páginas.
  */
 import Layout from "../layouts/Layout.astro";
 
-
 /*
- * Importa o Header utilizado nas páginas públicas.
+ * Importa o cabeçalho e o rodapé públicos.
  */
 import Header from "../components/Header.astro";
-
-
-/*
- * Importa o Footer utilizado nas páginas públicas.
- */
 import Footer from "../components/Footer.astro";
 ---
 
-
-<!--
-    Layout principal da Home.
--->
 <Layout titulo="Fotógrafo | Momentos que permanecem">
-
-
-    <!-- ==================================================
-         HEADER
-         ================================================== -->
-
-    <Header />
-
-
-    <main>
-
-
-        <!-- ==================================================
-             HERO
-             ================================================== -->
-
-        <section class="hero">
-
-            <div class="container hero-conteudo">
-
-
-                <!-- Texto principal -->
-
-                <div class="hero-texto">
-
-                    <!-- Pequena identificação da seção -->
-                    <p class="hero-legenda">
-                        FOTOGRAFIA
-                    </p>
-
-
-                    <!--
-                        Título principal.
-
-                        Posteriormente esse conteúdo poderá
-                        ser configurado pelo administrador.
-                    -->
-                    <h1>
-                        Momentos que permanecem.
-                    </h1>
-
-
-                    <!-- Descrição principal -->
-                    <p class="hero-descricao">
-
-                        Fotografando histórias,
-                        pessoas e momentos especiais
-                        para transformar lembranças
-                        em imagens.
-
-                    </p>
-
-
-                    <!--
-                        Botão que leva o visitante
-                        para o catálogo.
-                    -->
-                    <a
-                        href="/catalogo"
-                        class="botao"
-                    >
-                        Ver catálogo
-                    </a>
-
-                </div>
-
-
-                <!-- Imagem principal -->
-
-                <div class="hero-imagem">
-
-                    <!--
-                        Por enquanto utilizamos
-                        um placeholder.
-
-                        Posteriormente:
-
-                        R2
-                         ↓
-                        URL da imagem
-                         ↓
-                        <img>
-                    -->
-                    <div class="imagem-placeholder">
-
-                        FOTO PRINCIPAL
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- ==================================================
-             SOBRE
-             ================================================== -->
-
-        <section
-            id="sobre"
-            class="secao secao-alternativa"
-        >
-
-            <div class="container sobre">
-
-
-                <!-- Foto do fotógrafo -->
-
-                <div class="sobre-imagem">
-
-                    <div class="imagem-placeholder">
-
-                        FOTO DO FOTÓGRAFO
-
-                    </div>
-
-                </div>
-
-
-                <!-- Texto sobre -->
-
-                <div class="sobre-conteudo">
-
-                    <p class="hero-legenda">
-                        SOBRE
-                    </p>
-
-
-                    <h2 class="titulo-secao">
-                        Fotografando histórias.
-                    </h2>
-
-
-                    <p class="sobre-texto">
-
-                        A fotografia é uma forma de
-                        preservar momentos que não
-                        podem ser repetidos.
-
-                    </p>
-
-
-                    <p class="sobre-texto">
-
-                        Meu objetivo é registrar cada
-                        história de maneira natural,
-                        criando imagens que transmitam
-                        a emoção daquele momento.
-
-                    </p>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- ==================================================
-             PORTFÓLIO
-             ================================================== -->
-
-        <section class="secao">
-
-            <div class="container">
-
-
-                <!-- Título -->
-
-                <p class="hero-legenda">
-                    PORTFÓLIO
-                </p>
-
-
-                <h2 class="titulo-secao">
-                    Alguns trabalhos
-                </h2>
-
-
-                <p class="subtitulo-secao">
-
-                    Uma seleção de momentos
-                    registrados.
-
-                </p>
-
-
-                <!-- Galeria -->
-
-                <div class="galeria">
-
-
-                    <!-- FOTO 01 -->
-
-                    <div class="foto-placeholder">
-
-                        FOTO 01
-
-                    </div>
-
-
-                    <!-- FOTO 02 -->
-
-                    <div class="foto-placeholder">
-
-                        FOTO 02
-
-                    </div>
-
-
-                    <!-- FOTO 03 -->
-
-                    <div class="foto-placeholder">
-
-                        FOTO 03
-
-                    </div>
-
-
-                    <!-- FOTO 04 -->
-
-                    <div class="foto-placeholder">
-
-                        FOTO 04
-
-                    </div>
-
-
-                    <!-- FOTO 05 -->
-
-                    <div class="foto-placeholder">
-
-                        FOTO 05
-
-                    </div>
-
-
-                    <!-- FOTO 06 -->
-
-                    <div class="foto-placeholder">
-
-                        FOTO 06
-
-                    </div>
-
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-    </main>
-
-
-    <!-- ==================================================
-         FOOTER
-         ================================================== -->
-
-    <Footer />
-
+  <Header />
+
+  <main>
+    <!-- HERO: apresentação principal -->
+    <section class="hero">
+      <div class="container hero-conteudo">
+        <div class="hero-texto">
+          <p class="hero-legenda" id="hero-legenda">FOTOGRAFIA</p>
+
+          <h1 id="hero-titulo">Momentos que permanecem.</h1>
+
+          <p class="hero-descricao" id="hero-descricao">
+            Fotografando histórias, pessoas e momentos especiais para
+            transformar lembranças em imagens.
+          </p>
+
+          <a href="/catalogo" class="botao" id="hero-botao">
+            Ver catálogo
+          </a>
+        </div>
+
+        <div class="hero-imagem">
+          <div class="imagem-placeholder">
+            FOTO PRINCIPAL
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOBRE: apresentação do fotógrafo -->
+    <section id="sobre" class="secao secao-alternativa">
+      <div class="container sobre">
+        <div class="sobre-imagem">
+          <div class="imagem-placeholder">
+            FOTO DO FOTÓGRAFO
+          </div>
+        </div>
+
+        <div class="sobre-conteudo">
+          <p class="hero-legenda" id="sobre-legenda">SOBRE</p>
+
+          <h2 class="titulo-secao" id="sobre-titulo">
+            Fotografando histórias.
+          </h2>
+
+          <p class="sobre-texto" id="sobre-paragrafo-1">
+            A fotografia é uma forma de preservar momentos que não podem
+            ser repetidos.
+          </p>
+
+          <p class="sobre-texto" id="sobre-paragrafo-2">
+            Meu objetivo é registrar cada história de maneira natural,
+            criando imagens que transmitam a emoção daquele momento.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PORTFÓLIO: galeria de trabalhos -->
+    <section class="secao">
+      <div class="container">
+        <p class="hero-legenda">PORTFÓLIO</p>
+
+        <h2 class="titulo-secao">Alguns trabalhos</h2>
+
+        <p class="subtitulo-secao">
+          Uma seleção de momentos registrados.
+        </p>
+
+        <div class="galeria">
+          <div class="foto-placeholder">FOTO 01</div>
+          <div class="foto-placeholder">FOTO 02</div>
+          <div class="foto-placeholder">FOTO 03</div>
+          <div class="foto-placeholder">FOTO 04</div>
+          <div class="foto-placeholder">FOTO 05</div>
+          <div class="foto-placeholder">FOTO 06</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
 </Layout>
 
+<!--
+  Carrega o conteúdo público salvo no Supabase.
+  Se houver erro, os textos padrão permanecem visíveis.
+-->
+<script>
+  import { supabase } from "../lib/supabase";
 
+  /*
+   * Busca somente as chaves utilizadas nesta página.
+   */
+  async function carregarConteudoHome() {
+    const { data, error } = await supabase
+      .from("home_conteudo")
+      .select("chave, valor");
 
-<style>
-
-/*
- * ========================================================
- * HERO
- * ========================================================
- */
-
-.hero {
-
-    /*
-     * Define uma altura confortável para
-     * a primeira seção.
-     */
-    min-height: 720px;
-
-    /*
-     * Centraliza verticalmente o conteúdo.
-     */
-    display: flex;
-
-    align-items: center;
-
-}
-
-
-/*
- * Organiza texto e imagem lado a lado.
- */
-.hero-conteudo {
-
-    display: grid;
+    if (error) {
+      console.error("Não foi possível carregar a Home:", error);
+      return;
+    }
 
     /*
-     * A imagem ocupa mais espaço que o texto.
+     * Organiza os registros por chave.
      */
-    grid-template-columns: 0.8fr 1.2fr;
-
-    /*
-     * Espaço entre as duas colunas.
-     */
-    gap: 70px;
-
-    align-items: center;
-
-}
-
-
-/*
- * Limita a largura do texto.
- */
-.hero-texto {
-
-    max-width: 450px;
-
-}
-
-
-/*
- * Pequena identificação acima do título.
- */
-.hero-legenda {
-
-    margin-bottom: 15px;
-
-    color: var(--cor-destaque);
-
-    font-size: 0.75rem;
-
-    font-weight: 600;
-
-    letter-spacing: 0.2em;
-
-}
-
-
-/*
- * Título principal.
- */
-.hero h1 {
-
-    margin-bottom: 28px;
-
-    /*
-     * clamp permite que o tamanho
-     * se adapte ao tamanho da tela.
-     */
-    font-size: clamp(
-        3rem,
-        6vw,
-        5.5rem
+    const conteudo = new Map(
+      (data ?? []).map((registro) => [
+        registro.chave,
+        registro.valor,
+      ])
     );
 
+    /*
+     * Atualiza textos somente quando houver
+     * um valor não vazio no banco.
+     */
+    function atualizarTexto(id, chave) {
+      const elemento = document.getElementById(id);
+      const valor = conteudo.get(chave);
+
+      if (elemento && typeof valor === "string" && valor.trim()) {
+        elemento.textContent = valor;
+      }
+    }
+
+    atualizarTexto("hero-legenda", "hero_legenda");
+    atualizarTexto("hero-titulo", "hero_titulo");
+    atualizarTexto("hero-descricao", "hero_descricao");
+
+    atualizarTexto("sobre-legenda", "sobre_legenda");
+    atualizarTexto("sobre-titulo", "sobre_titulo");
+    atualizarTexto("sobre-paragrafo-1", "sobre_paragrafo_1");
+    atualizarTexto("sobre-paragrafo-2", "sobre_paragrafo_2");
+
+    /*
+     * Atualiza o botão somente se o destino
+     * for um caminho interno do próprio site.
+     */
+    const textoBotao = conteudo.get("hero_botao_texto");
+    const linkBotao = conteudo.get("hero_botao_link");
+    const botao = document.getElementById("hero-botao");
+
+    if (
+      botao instanceof HTMLAnchorElement &&
+      typeof textoBotao === "string" &&
+      textoBotao.trim()
+    ) {
+      botao.textContent = textoBotao;
+    }
+
+    if (
+      botao instanceof HTMLAnchorElement &&
+      typeof linkBotao === "string" &&
+      /^\/(?!\/)/.test(linkBotao.trim())
+    ) {
+      botao.setAttribute("href", linkBotao.trim());
+    }
+
+    /*
+     * Atualiza o título e a descrição SEO.
+     */
+    const tituloSeo = conteudo.get("seo_titulo");
+    const descricaoSeo = conteudo.get("seo_descricao");
+
+    if (typeof tituloSeo === "string" && tituloSeo.trim()) {
+      document.title = tituloSeo.trim();
+    }
+
+    if (typeof descricaoSeo === "string" && descricaoSeo.trim()) {
+      let metaDescricao = document.querySelector(
+        'meta[name="description"]'
+      );
+
+      if (!metaDescricao) {
+        metaDescricao = document.createElement("meta");
+        metaDescricao.setAttribute("name", "description");
+        document.head.appendChild(metaDescricao);
+      }
+
+      metaDescricao.setAttribute("content", descricaoSeo.trim());
+    }
+  }
+
+  void carregarConteudoHome();
+</script>
+
+<style>
+  /*
+   * HERO
+   */
+  .hero {
+    min-height: 720px;
+    display: flex;
+    align-items: center;
+  }
+
+  .hero-conteudo {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 70px;
+    align-items: center;
+  }
+
+  .hero-texto {
+    max-width: 450px;
+  }
+
+  .hero-legenda {
+    margin-bottom: 15px;
+    color: var(--cor-destaque);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+  }
+
+  .hero h1 {
+    margin-bottom: 28px;
+    font-size: clamp(3rem, 6vw, 5.5rem);
     font-weight: 400;
-
     line-height: 0.95;
-
     letter-spacing: -0.04em;
+  }
 
-}
-
-
-/*
- * Texto abaixo do título.
- */
-.hero-descricao {
-
+  .hero-descricao {
     margin-bottom: 32px;
-
     color: var(--cor-texto-secundario);
-
     font-size: 1.05rem;
+  }
 
-}
-
-
-/*
- * ========================================================
- * IMAGENS
- * ========================================================
- */
-
-.hero-imagem {
-
-    /*
-     * Altura da foto principal.
-     */
+  /*
+   * IMAGENS
+   */
+  .hero-imagem {
     height: 620px;
+  }
 
-}
-
-
-/*
- * Placeholder utilizado enquanto
- * ainda não temos imagens no R2.
- */
-.imagem-placeholder {
-
+  .imagem-placeholder {
     width: 100%;
-
     height: 100%;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
-    background-color:
-        var(--cor-fundo-secundario);
-
-    color:
-        var(--cor-texto-secundario);
-
+    background-color: var(--cor-fundo-secundario);
+    color: var(--cor-texto-secundario);
     font-size: 0.85rem;
-
     letter-spacing: 0.08em;
+  }
 
-}
-
-
-/*
- * ========================================================
- * SOBRE
- * ========================================================
- */
-
-.sobre {
-
+  /*
+   * SOBRE
+   */
+  .sobre {
     display: grid;
-
     grid-template-columns: 1fr 1fr;
-
     gap: 100px;
-
     align-items: center;
+  }
 
-}
-
-
-/*
- * Área da foto do fotógrafo.
- */
-.sobre-imagem {
-
+  .sobre-imagem {
     height: 500px;
+  }
 
-}
-
-
-/*
- * Conteúdo textual da seção.
- */
-.sobre-conteudo {
-
+  .sobre-conteudo {
     max-width: 500px;
+  }
 
-}
-
-
-/*
- * Parágrafos da seção Sobre.
- */
-.sobre-texto {
-
+  .sobre-texto {
     margin-bottom: 20px;
-
-    color:
-        var(--cor-texto-secundario);
-
+    color: var(--cor-texto-secundario);
     font-size: 1.05rem;
+  }
 
-}
-
-
-/*
- * ========================================================
- * GALERIA
- * ========================================================
- */
-
-.galeria {
-
+  /*
+   * GALERIA
+   */
+  .galeria {
     display: grid;
-
-    /*
-     * Três imagens por linha.
-     */
-    grid-template-columns:
-        repeat(3, 1fr);
-
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
+  }
 
-}
-
-
-/*
- * Cada foto da galeria.
- */
-.foto-placeholder {
-
-    /*
-     * Mantém todas as fotos
-     * com a mesma proporção.
-     */
+  .foto-placeholder {
     aspect-ratio: 4 / 5;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
-    background-color:
-        var(--cor-fundo-secundario);
-
-    color:
-        var(--cor-texto-secundario);
-
+    background-color: var(--cor-fundo-secundario);
+    color: var(--cor-texto-secundario);
     font-size: 0.85rem;
+    transition: transform 0.3s ease;
+  }
 
-    transition:
-        transform 0.3s ease;
-
-}
-
-
-/*
- * Pequeno efeito ao passar o mouse.
- */
-.foto-placeholder:hover {
-
+  .foto-placeholder:hover {
     transform: translateY(-4px);
+  }
 
-}
-
-
-/*
- * ========================================================
- * RESPONSIVIDADE
- * ========================================================
- */
-
-@media (max-width: 768px) {
-
-
-    /*
-     * Reduz a altura do Hero.
-     */
+  /*
+   * RESPONSIVIDADE
+   */
+  @media (max-width: 768px) {
     .hero {
-
-        min-height: auto;
-
-        padding: 80px 0;
-
+      min-height: auto;
+      padding: 80px 0;
     }
 
-
-    /*
-     * Coloca texto e imagem
-     * um abaixo do outro.
-     */
     .hero-conteudo {
-
-        grid-template-columns: 1fr;
-
-        gap: 45px;
-
+      grid-template-columns: 1fr;
+      gap: 45px;
     }
 
-
-    /*
-     * Reduz a altura da imagem
-     * no celular.
-     */
     .hero-imagem {
-
-        height: 450px;
-
+      height: 450px;
     }
 
-
-    /*
-     * Sobre também passa para
-     * uma única coluna.
-     */
     .sobre {
-
-        grid-template-columns: 1fr;
-
-        gap: 45px;
-
+      grid-template-columns: 1fr;
+      gap: 45px;
     }
 
-
-    /*
-     * Reduz a altura da foto.
-     */
     .sobre-imagem {
-
-        height: 400px;
-
+      height: 400px;
     }
 
-
-    /*
-     * Galeria passa para duas colunas.
-     */
     .galeria {
-
-        grid-template-columns:
-            repeat(2, 1fr);
-
+      grid-template-columns: repeat(2, 1fr);
     }
+  }
 
-}
-
-
-/*
- * ========================================================
- * CELULARES PEQUENOS
- * ========================================================
- */
-
-@media (max-width: 480px) {
-
-
-    /*
-     * Galeria passa para uma coluna.
-     */
+  /*
+   * CELULARES PEQUENOS
+   */
+  @media (max-width: 480px) {
     .galeria {
-
-        grid-template-columns: 1fr;
-
+      grid-template-columns: 1fr;
     }
 
-
-    /*
-     * Hero um pouco menor.
-     */
     .hero h1 {
-
-        font-size: 3rem;
-
+      font-size: 3rem;
     }
-
-}
-
+  }
 </style>

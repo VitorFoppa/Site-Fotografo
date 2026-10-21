@@ -1,0 +1,543 @@
+---
+/*
+ * Layout compartilhado do painel administrativo.
+ */
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout titulo="Editar página inicial | Painel administrativo">
+  <main class="pagina-admin">
+    <header class="cabecalho">
+      <div>
+        <a href="/admin/" class="voltar">← Voltar ao painel</a>
+        <p class="sobretitulo">GERENCIAMENTO DO SITE</p>
+        <h1>Página inicial</h1>
+        <p class="descricao">
+          Edite os textos da página inicial do site do fotógrafo.
+        </p>
+      </div>
+    </header>
+
+    <!-- Mensagens de carregamento, sucesso e erro -->
+    <p id="mensagem" class="mensagem" role="status" aria-live="polite">
+      Verificando acesso...
+    </p>
+
+    <!-- Formulário liberado somente para administradores ativos -->
+    <form id="form-home" hidden>
+      <section class="bloco">
+        <div class="bloco-cabecalho">
+          <span class="numero">01</span>
+          <div>
+            <h2>Seção principal</h2>
+            <p>Primeiro conteúdo que o visitante vê ao acessar o site.</p>
+          </div>
+        </div>
+
+        <label for="hero_legenda">Legenda</label>
+        <input
+          id="hero_legenda"
+          name="hero_legenda"
+          type="text"
+          placeholder="Fotografia profissional"
+        />
+
+        <label for="hero_titulo">Título principal</label>
+        <textarea
+          id="hero_titulo"
+          name="hero_titulo"
+          rows="2"
+          required
+          placeholder="Registre momentos inesquecíveis"
+        ></textarea>
+
+        <label for="hero_descricao">Descrição</label>
+        <textarea
+          id="hero_descricao"
+          name="hero_descricao"
+          rows="3"
+          placeholder="Conte um pouco sobre o trabalho do fotógrafo."
+        ></textarea>
+
+        <div class="duas-colunas">
+          <div>
+            <label for="hero_botao_texto">Texto do botão</label>
+            <input
+              id="hero_botao_texto"
+              name="hero_botao_texto"
+              type="text"
+              placeholder="Conheça os planos"
+            />
+          </div>
+
+          <div>
+            <label for="hero_botao_link">Link do botão</label>
+            <input
+              id="hero_botao_link"
+              name="hero_botao_link"
+              type="text"
+              placeholder="/catalogo/"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="bloco">
+        <div class="bloco-cabecalho">
+          <span class="numero">02</span>
+          <div>
+            <h2>Sobre o fotógrafo</h2>
+            <p>Apresente a história, o estilo e a experiência profissional.</p>
+          </div>
+        </div>
+
+        <label for="sobre_legenda">Legenda da seção</label>
+        <input
+          id="sobre_legenda"
+          name="sobre_legenda"
+          type="text"
+          placeholder="Sobre mim"
+        />
+
+        <label for="sobre_titulo">Título da seção</label>
+        <textarea
+          id="sobre_titulo"
+          name="sobre_titulo"
+          rows="2"
+          placeholder="Muito além de fotografias"
+        ></textarea>
+
+        <label for="sobre_paragrafo_1">Primeiro parágrafo</label>
+        <textarea
+          id="sobre_paragrafo_1"
+          name="sobre_paragrafo_1"
+          rows="4"
+          placeholder="Conte sua história."
+        ></textarea>
+
+        <label for="sobre_paragrafo_2">Segundo parágrafo</label>
+        <textarea
+          id="sobre_paragrafo_2"
+          name="sobre_paragrafo_2"
+          rows="4"
+          placeholder="Fale sobre sua abordagem e seu trabalho."
+        ></textarea>
+      </section>
+
+      <section class="bloco">
+        <div class="bloco-cabecalho">
+          <span class="numero">03</span>
+          <div>
+            <h2>SEO e mecanismos de busca</h2>
+            <p>Informações usadas no título e na descrição da página.</p>
+          </div>
+        </div>
+
+        <label for="seo_titulo">Título da página</label>
+        <input
+          id="seo_titulo"
+          name="seo_titulo"
+          type="text"
+          placeholder="Fotógrafo profissional"
+        />
+
+        <label for="seo_descricao">Descrição para mecanismos de busca</label>
+        <textarea
+          id="seo_descricao"
+          name="seo_descricao"
+          rows="3"
+          placeholder="Uma breve descrição do site."
+        ></textarea>
+      </section>
+
+      <div class="acoes">
+        <a href="/admin/" class="botao-secundario">Cancelar</a>
+        <button id="botao-salvar" type="submit">
+          Salvar alterações
+        </button>
+      </div>
+    </form>
+  </main>
+</Layout>
+
+<script>
+  /*
+   * Cliente Supabase utilizado no restante do painel.
+   */
+  import { supabase } from "../../lib/supabase";
+
+  /*
+   * Todas as chaves que serão carregadas e salvas.
+   * Os nomes devem corresponder aos registros da tabela home_conteudo.
+   */
+  const chaves = [
+    "hero_legenda",
+    "hero_titulo",
+    "hero_descricao",
+    "hero_botao_texto",
+    "hero_botao_link",
+    "sobre_legenda",
+    "sobre_titulo",
+    "sobre_paragrafo_1",
+    "sobre_paragrafo_2",
+    "seo_titulo",
+    "seo_descricao",
+  ];
+
+  const formulario = document.querySelector("#form-home");
+  const mensagem = document.querySelector("#mensagem");
+  const botaoSalvar = document.querySelector("#botao-salvar");
+
+  /*
+   * Exibe mensagens de carregamento, sucesso ou erro.
+   */
+  function mostrarMensagem(texto, tipo = "") {
+    mensagem.textContent = texto;
+    mensagem.className = "mensagem";
+
+    if (tipo) {
+      mensagem.classList.add(tipo);
+    }
+  }
+
+  /*
+   * Verifica se existe uma sessão e se o usuário
+   * está cadastrado como administrador ativo.
+   */
+  async function verificarAdministrador() {
+    const { data: sessaoData, error: sessaoError } =
+      await supabase.auth.getSession();
+
+    if (sessaoError || !sessaoData.session) {
+      window.location.replace("/admin/");
+      return false;
+    }
+
+    const usuario = sessaoData.session.user;
+
+    const { data: administrador, error } = await supabase
+      .from("administradores")
+      .select("user_id")
+      .eq("user_id", usuario.id)
+      .eq("ativo", true)
+      .maybeSingle();
+
+    if (error || !administrador) {
+      mostrarMensagem("Acesso não autorizado. Verifique sua conta.");
+      return false;
+    }
+
+    return true;
+  }
+
+  /*
+   * Busca o conteúdo salvo no Supabase e preenche os campos.
+   */
+  async function carregarConteudo() {
+    mostrarMensagem("Carregando conteúdo...");
+
+    const { data, error } = await supabase
+      .from("home_conteudo")
+      .select("chave, valor");
+
+    if (error) {
+      console.error("Erro ao carregar conteúdo:", error);
+      mostrarMensagem(
+        "Não foi possível carregar o conteúdo. Confira as permissões da tabela.",
+        "erro"
+      );
+      return;
+    }
+
+    for (const registro of data ?? []) {
+      const campo = document.getElementById(registro.chave);
+
+      if (campo) {
+        campo.value = registro.valor ?? "";
+      }
+    }
+
+    formulario.hidden = false;
+    mostrarMensagem("Conteúdo carregado. Você já pode editar.", "sucesso");
+  }
+
+  /*
+   * Converte os campos preenchidos em registros
+   * e salva tudo na tabela home_conteudo.
+   */
+  formulario.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+
+    botaoSalvar.disabled = true;
+    mostrarMensagem("Salvando alterações...");
+
+    const registros = chaves.map((chave) => {
+      const campo = document.getElementById(chave);
+
+      return {
+        chave,
+        valor: campo.value.trim(),
+        atualizado_em: new Date().toISOString(),
+      };
+    });
+
+    const { error } = await supabase
+      .from("home_conteudo")
+      .upsert(registros, { onConflict: "chave" });
+
+    botaoSalvar.disabled = false;
+
+    if (error) {
+      console.error("Erro ao salvar conteúdo:", error);
+      mostrarMensagem(
+        "Não foi possível salvar. Confira as políticas RLS e tente novamente.",
+        "erro"
+      );
+      return;
+    }
+
+    mostrarMensagem("Alterações salvas com sucesso!", "sucesso");
+  });
+
+  /*
+   * Inicialização da página administrativa.
+   */
+  async function iniciarPagina() {
+    const autorizado = await verificarAdministrador();
+
+    if (!autorizado) {
+      return;
+    }
+
+    await carregarConteudo();
+  }
+
+  iniciarPagina();
+</script>
+
+<style>
+  /*
+   * Estrutura geral da página.
+   */
+  .pagina-admin {
+    width: min(100% - 40px, 900px);
+    margin: 0 auto;
+    padding: 60px 0 100px;
+    color: var(--color-text, #262626);
+  }
+
+  .cabecalho {
+    margin-bottom: 35px;
+  }
+
+  .voltar {
+    display: inline-block;
+    margin-bottom: 30px;
+    color: inherit;
+    text-decoration: none;
+    opacity: 0.75;
+  }
+
+  .voltar:hover {
+    opacity: 1;
+  }
+
+  .sobretitulo {
+    margin-bottom: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    opacity: 0.65;
+  }
+
+  .cabecalho h1 {
+    margin: 0 0 12px;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 400;
+    letter-spacing: -0.04em;
+  }
+
+  .descricao,
+  .bloco-cabecalho p {
+    line-height: 1.7;
+    opacity: 0.7;
+  }
+
+  /*
+   * Blocos do formulário.
+   */
+  #form-home {
+    display: grid;
+    gap: 24px;
+  }
+
+  #form-home[hidden] {
+    display: none;
+  }
+
+  .bloco {
+    padding: 30px;
+    border: 1px solid var(--color-border, #dedede);
+    border-radius: 8px;
+    background: var(--color-surface, #fff);
+  }
+
+  .bloco-cabecalho {
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+    margin-bottom: 28px;
+  }
+
+  .numero {
+    font-size: 13px;
+    font-weight: 700;
+    opacity: 0.55;
+  }
+
+  .bloco-cabecalho h2 {
+    margin: 0 0 8px;
+    font-size: 1.4rem;
+    font-weight: 500;
+  }
+
+  .bloco-cabecalho p {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  /*
+   * Campos de texto.
+   */
+  #form-home label {
+    display: block;
+    margin: 22px 0 9px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  #form-home input,
+  #form-home textarea {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid var(--color-border, #d5d5d5);
+    border-radius: 5px;
+    background: var(--color-background, #fff);
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+  }
+
+  #form-home textarea {
+    resize: vertical;
+    line-height: 1.6;
+  }
+
+  #form-home input:focus,
+  #form-home textarea:focus {
+    outline: 2px solid var(--color-accent, #777);
+    outline-offset: 2px;
+  }
+
+  .duas-colunas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  /*
+   * Botões de ação.
+   */
+  .acoes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 8px;
+  }
+
+  .acoes a,
+  .acoes button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 46px;
+    padding: 0 22px;
+    border: 1px solid var(--color-border, #d5d5d5);
+    border-radius: 5px;
+    font: inherit;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .botao-secundario {
+    color: inherit;
+    background: transparent;
+  }
+
+  .acoes button {
+    border-color: #262626;
+    background: #262626;
+    color: white;
+  }
+
+  .acoes button:disabled {
+    cursor: wait;
+    opacity: 0.6;
+  }
+
+  /*
+   * Mensagens de estado.
+   */
+  .mensagem {
+    margin: 0 0 24px;
+    padding: 14px 16px;
+    border: 1px solid var(--color-border, #dedede);
+    border-radius: 5px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .mensagem:empty {
+    display: none;
+  }
+
+  .mensagem.sucesso {
+    border-color: #9ac7a6;
+  }
+
+  .mensagem.erro {
+    border-color: #d99a9a;
+  }
+
+  /*
+   * Ajustes para telas menores.
+   */
+  @media (max-width: 600px) {
+    .pagina-admin {
+      width: min(100% - 28px, 900px);
+      padding-top: 35px;
+    }
+
+    .bloco {
+      padding: 20px;
+    }
+
+    .duas-colunas {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .acoes {
+      flex-direction: column-reverse;
+    }
+
+    .acoes a,
+    .acoes button {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+</style>
