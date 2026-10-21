@@ -63,9 +63,38 @@ import Layout from "../../layouts/Layout.astro";
               rows="5"
               placeholder={"Um benefício por linha\n20 fotos editadas\nEntrega digital"}
             ></textarea>
+
             <p class="ajuda">Digite um benefício por linha.</p>
 
+            <!-- Foto do plano -->
+            <label for="foto">Foto do plano</label>
+            <input
+              id="foto"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif"
+            />
+
+            <p class="ajuda">
+              Formatos JPG, PNG, WebP ou AVIF. Tamanho máximo: 10 MB.
+              Ao editar, selecione outra imagem somente se quiser substituí-la.
+            </p>
+
+            <!-- Prévia da foto atual -->
+            <div id="area-foto-atual" class="area-foto-atual" hidden>
+              <img
+                id="previa-foto"
+                class="previa-foto"
+                alt="Foto atual do plano"
+              />
+
+              <label class="opcao">
+                <input id="remover-foto" type="checkbox" />
+                Remover foto atual
+              </label>
+            </div>
+
             <label for="ordem">Ordem de exibição</label>
+
             <input id="ordem" type="number" step="1" value="0" />
 
             <label class="opcao">
@@ -111,6 +140,7 @@ import Layout from "../../layouts/Layout.astro";
   import { supabase } from "../../lib/supabase";
 
   // Tipos dos dados recebidos do Supabase.
+
   type Plano = {
     id: string;
     nome: string;
@@ -119,7 +149,9 @@ import Layout from "../../layouts/Layout.astro";
     destaque: boolean;
     ativo: boolean;
     ordem: number;
+    foto_key: string | null;
   };
+
 
   type ItemPlano = {
     id: string;
@@ -136,7 +168,18 @@ import Layout from "../../layouts/Layout.astro";
   const campoItens = document.querySelector<HTMLTextAreaElement>("#itens")!;
   const campoOrdem = document.querySelector<HTMLInputElement>("#ordem")!;
   const campoDestaque = document.querySelector<HTMLInputElement>("#destaque")!;
+  
   const campoAtivo = document.querySelector<HTMLInputElement>("#ativo")!;
+
+  // Campos relacionados à foto do plano.
+  const campoFoto = document.querySelector<HTMLInputElement>("#foto")!;
+  const areaFotoAtual =
+    document.querySelector<HTMLDivElement>("#area-foto-atual")!;
+  const previaFoto =
+    document.querySelector<HTMLImageElement>("#previa-foto")!;
+  const campoRemoverFoto =
+    document.querySelector<HTMLInputElement>("#remover-foto")!;
+
 
   const mensagem = document.querySelector<HTMLParagraphElement>("#mensagem")!;
   const conteudo = document.querySelector<HTMLElement>("#conteudo")!;
@@ -177,9 +220,53 @@ import Layout from "../../layouts/Layout.astro";
       currency: "BRL",
     });
   }
+// Obtém a URL pública de uma foto no Supabase Storage.
+function obterUrlFoto(caminho: string): string {
+  const { data } = supabase.storage
+    .from("fotos-catalogo")
+    .getPublicUrl(caminho);
 
+  return data.publicUrl;
+}
+
+// Atualiza a prévia da foto durante a edição do plano.
+function atualizarPreviaFoto(caminho: string | null): void {
+  if (caminho) {
+    previaFoto.src = obterUrlFoto(caminho);
+    areaFotoAtual.hidden = false;
+  } else {
+    previaFoto.removeAttribute("src");
+    areaFotoAtual.hidden = true;
+  }
+
+  // Desmarca a opção de remover ao carregar outra prévia.
+  campoRemoverFoto.checked = false;
+}
   // Confirma a sessão e a permissão administrativa.
   async function verificarAdministrador() {
+
+// Obtém a URL pública de uma foto no Supabase Storage.
+function obterUrlFoto(caminho: string): string {
+  const { data } = supabase.storage
+    .from("fotos-catalogo")
+    .getPublicUrl(caminho);
+
+  return data.publicUrl;
+}
+
+// Atualiza a prévia da foto durante a edição do plano.
+function atualizarPreviaFoto(caminho: string | null): void {
+  if (caminho) {
+    previaFoto.src = obterUrlFoto(caminho);
+    areaFotoAtual.hidden = false;
+  } else {
+    previaFoto.removeAttribute("src");
+    areaFotoAtual.hidden = true;
+  }
+
+  campoRemoverFoto.checked = false;
+}
+
     const { data, error } = await supabase.auth.getSession();
 
     if (error || !data.session) {
@@ -208,11 +295,15 @@ import Layout from "../../layouts/Layout.astro";
     exibirMensagem("Carregando planos...");
     listaPlanos.innerHTML = "";
 
+
     const { data: dadosPlanos, error: erroPlanos } = await supabase
       .from("planos")
-      .select("id, nome, descricao, preco, destaque, ativo, ordem")
+      .select(
+        "id, nome, descricao, preco, destaque, ativo, ordem, foto_key"
+      )
       .order("ordem", { ascending: true })
       .order("nome", { ascending: true });
+
 
     if (erroPlanos) {
       exibirMensagem("Não foi possível carregar os planos.", true);
@@ -266,9 +357,24 @@ import Layout from "../../layouts/Layout.astro";
         ? `<ul>${itens.map((item) => `<li>${escaparHtml(item.descricao)}</li>`).join("")}</ul>`
         : '<p class="sem-itens">Nenhum benefício cadastrado.</p>';
 
+      
       return `
         <article class="plano-item">
+
+          ${
+            plano.foto_key
+              ? `
+                <img
+                  src="${escaparHtml(obterUrlFoto(plano.foto_key))}"
+                  class="foto-plano-lista"
+                  alt="Foto do plano ${escaparHtml(plano.nome)}"
+                />
+              `
+              : ""
+          }
+
           <div class="plano-item-topo">
+
             <div>
               <h3>${escaparHtml(plano.nome)}</h3>
               <p class="preco">${formatarPreco(Number(plano.preco))}</p>
@@ -313,21 +419,30 @@ import Layout from "../../layouts/Layout.astro";
     campoOrdem.value = String(plano.ordem);
     campoDestaque.checked = plano.destaque;
     campoAtivo.checked = plano.ativo;
+
     campoItens.value = (itensPorPlano[plano.id] ?? [])
       .map((item) => item.descricao)
       .join("\n");
 
-    tituloFormulario.textContent = "Editar plano";
+
+// Limpa uma seleção anterior e mostra a foto cadastrada.
+campoFoto.value = "";
+atualizarPreviaFoto(plano.foto_key);
+
+tituloFormulario.textContent = "Editar plano";
+
     botaoSalvar.textContent = "Salvar alterações";
     botaoCancelar.hidden = false;
 
     formulario.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  // Limpa o formulário e retorna ao modo de cadastro.
+// Limpa o formulário e retorna ao modo de cadastro.
   function limparFormulario() {
     formulario.reset();
     campoId.value = "";
+    campoFoto.value = "";
+    atualizarPreviaFoto(null);
     campoOrdem.value = "0";
     campoAtivo.checked = true;
     tituloFormulario.textContent = "Cadastrar plano";
@@ -339,53 +454,114 @@ import Layout from "../../layouts/Layout.astro";
   formulario.addEventListener("submit", async (evento) => {
     evento.preventDefault();
 
-    const nome = campoNome.value.trim();
-    const preco = Number(campoPreco.value);
-    const beneficios = campoItens.value
-      .split("\n")
-      .map((item) => item.trim())
-      .filter(Boolean);
+    // Identifica o botão de salvar.
+    const botaoSalvar = formulario.querySelector<HTMLButtonElement>(
+      'button[type="submit"]',
+    );
 
-    if (!nome) {
-      exibirMensagem("Informe o nome do plano.", true);
-      return;
+    // Obtém os dados da foto selecionada.
+    const arquivoFoto = campoFoto.files?.[0] ?? null;
+
+    // Recupera a foto que já está salva no plano, se houver.
+    const planoAtual = planos.find(
+      (plano) => String(plano.id) === campoId.value,
+    );
+
+    const fotoAntiga = planoAtual?.foto_key ?? null;
+
+    // Valida o arquivo antes de iniciar o salvamento.
+    if (arquivoFoto) {
+      const tiposPermitidos = [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/avif",
+      ];
+
+      if (!tiposPermitidos.includes(arquivoFoto.type)) {
+        exibirMensagem(
+          "Formato inválido. Selecione uma imagem JPG, PNG, WebP ou AVIF.",
+          true,
+        );
+        return;
+      }
+
+      if (arquivoFoto.size > 10 * 1024 * 1024) {
+        exibirMensagem(
+          "A imagem deve ter no máximo 10 MB.",
+          true,
+        );
+        return;
+      }
     }
 
-    if (campoPreco.value.trim() === "" || !Number.isFinite(preco) || preco < 0) {
-      exibirMensagem("Informe um preço válido, igual ou maior que zero.", true);
-      return;
+    if (botaoSalvar) {
+      botaoSalvar.disabled = true;
     }
 
-    const ordem = Number(campoOrdem.value || 0);
-
-    if (!Number.isInteger(ordem)) {
-      exibirMensagem("A ordem deve ser um número inteiro.", true);
-      return;
-    }
-
-    botaoSalvar.disabled = true;
-    botaoSalvar.textContent = "Salvando...";
+    let novaFotoKey: string | null = null;
 
     try {
+      // Envia a nova imagem ao Supabase Storage, se uma foi selecionada.
+      if (arquivoFoto) {
+        const extensoes: Record<string, string> = {
+          "image/jpeg": "jpg",
+          "image/png": "png",
+          "image/webp": "webp",
+          "image/avif": "avif",
+        };
+
+        // Usa um nome único para evitar sobrescrever outras imagens.
+        novaFotoKey = `${crypto.randomUUID()}.${extensoes[arquivoFoto.type]}`;
+
+        const { error: erroUpload } = await supabase.storage
+          .from("fotos-catalogo")
+          .upload(novaFotoKey, arquivoFoto, {
+            contentType: arquivoFoto.type,
+            upsert: false,
+          });
+
+        if (erroUpload) {
+          throw new Error(
+            `Não foi possível enviar a foto: ${erroUpload.message}`,
+          );
+        }
+      }
+
+      // Define qual foto será associada ao plano.
+      let fotoKeyFinal = fotoAntiga;
+
+      if (arquivoFoto && novaFotoKey) {
+        fotoKeyFinal = novaFotoKey;
+      } else if (campoRemoverFoto.checked) {
+        fotoKeyFinal = null;
+      }
+
+      // Monta os dados do plano, incluindo o caminho da foto.
       const dadosPlano = {
-        nome,
+        nome: campoNome.value.trim(),
         descricao: campoDescricao.value.trim() || null,
-        preco,
+        preco: Number(campoPreco.value),
         destaque: campoDestaque.checked,
         ativo: campoAtivo.checked,
-        ordem,
-        atualizado_em: new Date().toISOString(),
+        ordem: Number(campoOrdem.value),
+        foto_key: fotoKeyFinal,
       };
 
       let planoId = campoId.value;
 
+      // Atualiza um plano existente ou cria um novo.
       if (planoId) {
         const { error } = await supabase
           .from("planos")
           .update(dadosPlano)
           .eq("id", planoId);
 
-        if (error) throw error;
+        if (error) {
+          throw new Error(
+            `Não foi possível atualizar o plano: ${error.message}`,
+          );
+        }
       } else {
         const { data, error } = await supabase
           .from("planos")
@@ -393,11 +569,16 @@ import Layout from "../../layouts/Layout.astro";
           .select("id")
           .single();
 
-        if (error) throw error;
-        planoId = data.id;
+        if (error) {
+          throw new Error(
+            `Não foi possível cadastrar o plano: ${error.message}`,
+          );
+        }
+
+        planoId = String(data.id);
       }
 
-      // Substitui os benefícios existentes pelos informados no formulário.
+      // Remove os benefícios antigos do plano.
       const { error: erroExcluirItens } = await supabase
         .from("plano_itens")
         .delete()
@@ -405,42 +586,80 @@ import Layout from "../../layouts/Layout.astro";
 
       if (erroExcluirItens) {
         throw new Error(
-          "O plano foi salvo, mas não foi possível atualizar seus benefícios."
+          `O plano foi salvo, mas não foi possível atualizar os benefícios: ${erroExcluirItens.message}`,
         );
       }
 
-      if (beneficios.length > 0) {
-        const novosItens = beneficios.map((descricao, indice) => ({
+      // Separa os benefícios por linha e remove linhas vazias.
+      const itens = campoItens.value
+        .split("\n")
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+
+      // Insere novamente os benefícios na ordem informada.
+      if (itens.length > 0) {
+        const dadosItens = itens.map((item, indice) => ({
           plano_id: planoId,
-          descricao,
+          descricao: item,
           ordem: indice + 1,
         }));
 
         const { error: erroInserirItens } = await supabase
           .from("plano_itens")
-          .insert(novosItens);
+          .insert(dadosItens);
 
         if (erroInserirItens) {
           throw new Error(
-            "O plano foi salvo, mas não foi possível cadastrar todos os benefícios."
+            `O plano foi salvo, mas não foi possível inserir os benefícios: ${erroInserirItens.message}`,
           );
         }
       }
 
+      // Só exclui a foto anterior depois de salvar o plano e os benefícios.
+      if (
+        fotoAntiga &&
+        fotoAntiga !== fotoKeyFinal
+      ) {
+        const { error: erroRemoverFoto } = await supabase.storage
+          .from("fotos-catalogo")
+          .remove([fotoAntiga]);
+
+        if (erroRemoverFoto) {
+          console.error(
+            "O plano foi salvo, mas a foto antiga não foi removida:",
+            erroRemoverFoto.message,
+          );
+        }
+      }
+
+      exibirMensagem("Plano salvo com sucesso!");
       limparFormulario();
       await carregarPlanos();
-      exibirMensagem("Plano salvo com sucesso.");
     } catch (erro) {
-      const detalhe = erro instanceof Error ? erro.message : "";
-      exibirMensagem(
-        detalhe || "Não foi possível salvar o plano. Verifique as permissões.",
-        true
-      );
+      // Se o salvamento falhar, tenta remover a nova imagem enviada.
+      if (novaFotoKey) {
+        const { error: erroLimpeza } = await supabase.storage
+          .from("fotos-catalogo")
+          .remove([novaFotoKey]);
+
+        if (erroLimpeza) {
+          console.error(
+            "Não foi possível remover a nova foto após o erro:",
+            erroLimpeza.message,
+          );
+        }
+      }
+
+      const mensagem =
+        erro instanceof Error
+          ? erro.message
+          : "Ocorreu um erro inesperado ao salvar o plano.";
+
+      exibirMensagem(mensagem, true);
     } finally {
-      botaoSalvar.disabled = false;
-      botaoSalvar.textContent = campoId.value
-        ? "Salvar alterações"
-        : "Salvar plano";
+      if (botaoSalvar) {
+        botaoSalvar.disabled = false;
+      }
     }
   });
 
@@ -806,5 +1025,39 @@ import Layout from "../../layouts/Layout.astro";
     .plano-item {
       padding: 14px;
     }
+  }
+
+  /* Área de prévia da foto atual. */
+  .area-foto-atual {
+    margin-top: 10px;
+  }
+
+.previa-foto {
+    display: block;
+    width: 100%;
+    max-width: 320px;
+    max-height: 220px;
+    margin-bottom: 10px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+/* Foto exibida nos cards administrativos. */
+  .foto-plano-lista {
+    display: block;
+    width: 100%;
+    height: 180px;
+    margin-bottom: 15px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 6px;
+  }
+
+/* Permite selecionar arquivos de imagem. */
+  #form-plano input[type="file"] {
+    width: 100%;
+    max-width: 100%;
+    font: inherit;
+    font-size: 0.85rem;
   }
 </style>
