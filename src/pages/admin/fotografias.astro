@@ -1,0 +1,1349 @@
+---
+/*
+ * Página administrativa para gerenciamento das fotografias.
+ *
+ * As imagens são armazenadas no Supabase Storage.
+ *
+ * Bucket utilizado:
+ * fotos-catalogo
+ *
+ * Os dados das imagens são registrados na tabela:
+ * home_fotos
+ */
+
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout titulo="Fotografias | Administração">
+  <main class="admin-fundo">
+    <section class="admin-container">
+
+      <!-- CABEÇALHO -->
+      <div class="cabecalho">
+        <a href="/admin/painel/" class="voltar">
+          ← Voltar ao painel
+        </a>
+
+        <p class="legenda">ADMINISTRAÇÃO</p>
+
+        <h1>Fotografias</h1>
+
+        <p class="introducao">
+          Gerencie as imagens utilizadas na página inicial do site.
+        </p>
+      </div>
+
+      <!-- FORMULÁRIO DE UPLOAD -->
+      <section class="card">
+        <div class="card-cabecalho">
+          <p class="legenda">NOVA FOTOGRAFIA</p>
+
+          <h2>Adicionar imagem</h2>
+        </div>
+
+        <form id="form-fotografia">
+
+          <!-- CATEGORIA -->
+          <div class="campo">
+            <label for="categoria">
+              Categoria
+            </label>
+
+            <select id="categoria" required>
+              <option value="hero">
+                Hero — Foto principal
+              </option>
+
+              <option value="sobre">
+                Sobre — Foto do fotógrafo
+              </option>
+
+              <option value="portfolio">
+                Portfólio — Galeria
+              </option>
+            </select>
+          </div>
+
+          <!-- TÍTULO -->
+          <div class="campo">
+            <label for="titulo">
+              Título
+            </label>
+
+            <input
+              type="text"
+              id="titulo"
+              placeholder="Ex.: Ensaio ao pôr do sol"
+              maxlength="150"
+            />
+          </div>
+
+          <!-- DESCRIÇÃO -->
+          <div class="campo">
+            <label for="descricao">
+              Descrição da imagem
+            </label>
+
+            <input
+              type="text"
+              id="descricao"
+              placeholder="Descrição utilizada no texto alternativo"
+              maxlength="255"
+            />
+          </div>
+
+          <!-- ORDEM -->
+          <div class="campo">
+            <label for="ordem">
+              Ordem
+            </label>
+
+            <input
+              type="number"
+              id="ordem"
+              value="1"
+              min="0"
+              step="1"
+            />
+
+            <small>
+              A menor ordem aparece primeiro no portfólio.
+            </small>
+          </div>
+
+          <!-- ARQUIVO -->
+          <div class="campo">
+            <label for="arquivo">
+              Fotografia
+            </label>
+
+            <input
+              type="file"
+              id="arquivo"
+              accept="image/jpeg,image/png,image/webp,image/avif"
+              required
+            />
+
+            <small>
+              Formatos aceitos: JPG, PNG, WebP e AVIF.
+              Tamanho máximo: 10 MB.
+            </small>
+          </div>
+
+          <!-- ATIVO -->
+          <label class="checkbox">
+            <input
+              type="checkbox"
+              id="ativo"
+              checked
+            />
+
+            <span>
+              Publicar fotografia imediatamente
+            </span>
+          </label>
+
+          <!-- MENSAGEM -->
+          <p
+            id="mensagem"
+            class="mensagem"
+            hidden
+          ></p>
+
+          <!-- BOTÃO -->
+          <button
+            type="submit"
+            class="botao"
+            id="botao-enviar"
+          >
+            Enviar fotografia
+          </button>
+
+        </form>
+      </section>
+
+      <!-- FOTOGRAFIAS CADASTRADAS -->
+      <section class="card">
+
+        <div class="card-cabecalho">
+          <p class="legenda">
+            FOTOGRAFIAS CADASTRADAS
+          </p>
+
+          <h2>Imagens da Home</h2>
+        </div>
+
+        <div
+          id="lista-fotos"
+          class="lista-fotos"
+        >
+          <p class="carregando">
+            Carregando fotografias...
+          </p>
+        </div>
+
+      </section>
+
+    </section>
+  </main>
+</Layout>
+
+<script>
+  /*
+   * Cliente do Supabase.
+   *
+   * Como este arquivo está em:
+   * src/pages/admin/fotografias.astro
+   *
+   * precisamos subir:
+   * admin → pages → src
+   *
+   * Por isso usamos ../../
+   */
+  import { supabase } from "../../lib/supabase";
+
+  /*
+   * Nome EXATO do bucket público
+   * criado no Supabase Storage.
+   */
+  const NOME_BUCKET = "fotos-catalogo";
+
+  /*
+   * Elementos do formulário.
+   */
+  const form =
+    document.getElementById(
+      "form-fotografia"
+    );
+
+  const categoria =
+    document.getElementById(
+      "categoria"
+    );
+
+  const titulo =
+    document.getElementById(
+      "titulo"
+    );
+
+  const descricao =
+    document.getElementById(
+      "descricao"
+    );
+
+  const ordem =
+    document.getElementById(
+      "ordem"
+    );
+
+  const arquivo =
+    document.getElementById(
+      "arquivo"
+    );
+
+  const ativo =
+    document.getElementById(
+      "ativo"
+    );
+
+  const mensagem =
+    document.getElementById(
+      "mensagem"
+    );
+
+  const botaoEnviar =
+    document.getElementById(
+      "botao-enviar"
+    );
+
+  const listaFotos =
+    document.getElementById(
+      "lista-fotos"
+    );
+
+  /*
+   * Exibe uma mensagem na interface.
+   */
+  function mostrarMensagem(
+    texto,
+    tipo = "sucesso"
+  ) {
+    if (!mensagem) {
+      return;
+    }
+
+    mensagem.textContent = texto;
+
+    mensagem.className =
+      `mensagem ${tipo}`;
+
+    mensagem.hidden = false;
+  }
+
+  /*
+   * Verifica se o usuário está autenticado
+   * e possui um cadastro ativo na tabela
+   * administradores.
+   */
+
+async function verificarAdministrador() {
+  // Verifica se existe uma sessão autenticada.
+  const { data: sessaoData, error: sessaoError } =
+    await supabase.auth.getSession();
+
+  if (sessaoError) {
+    console.error("Erro ao verificar sessão:", sessaoError);
+
+    mostrarMensagem(
+      `Erro ao verificar login: ${sessaoError.message}`,
+      "erro"
+    );
+
+    return false;
+  }
+
+  // Se não estiver autenticado, volta para o login.
+  if (!sessaoData.session) {
+    window.location.replace("/admin/");
+    return false;
+  }
+
+  const userId = sessaoData.session.user.id;
+
+  // Consulta o administrador usando o ID do usuário autenticado.
+  // Não selecionamos uma coluna "id" que pode não existir.
+  const { data: administrador, error: adminError } = await supabase
+    .from("administradores")
+    .select("user_id")
+    .eq("user_id", userId)
+    .eq("ativo", true)
+    .maybeSingle();
+
+  if (adminError) {
+    console.error(
+      "Erro ao consultar administradores:",
+      adminError
+    );
+
+    mostrarMensagem(
+      `Não foi possível validar o administrador: ${adminError.message}`,
+      "erro"
+    );
+
+    return false;
+  }
+
+  // Impede o acesso caso não exista um cadastro ativo.
+  if (!administrador) {
+    mostrarMensagem(
+      "O usuário autenticado não possui um cadastro de administrador ativo. Confira a tabela administradores.",
+      "erro"
+    );
+
+    return false;
+  }
+
+  return true;
+}
+
+  /*
+   * Escapa textos antes de inseri-los
+   * em HTML.
+   */
+  function escaparHtml(valor) {
+    const elemento =
+      document.createElement("div");
+
+    elemento.textContent =
+      valor ?? "";
+
+    return elemento.innerHTML;
+  }
+
+  /*
+   * Carrega todas as fotografias
+   * cadastradas na tabela home_fotos.
+   */
+  async function carregarFotos() {
+    if (!listaFotos) {
+      return;
+    }
+
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("home_fotos")
+      .select(
+        "id, categoria, titulo, descricao, url_imagem, caminho_arquivo, ordem, ativo"
+      )
+      .order("categoria", {
+        ascending: true,
+      })
+      .order("ordem", {
+        ascending: true,
+      });
+
+    if (error) {
+      console.error(
+        "Erro ao carregar fotografias:",
+        error
+      );
+
+      listaFotos.innerHTML = `
+        <p class="erro">
+          Não foi possível carregar as fotografias.
+        </p>
+      `;
+
+      return;
+    }
+
+    /*
+     * Nenhuma fotografia cadastrada.
+     */
+    if (
+      !data ||
+      data.length === 0
+    ) {
+      listaFotos.innerHTML = `
+        <p class="vazio">
+          Nenhuma fotografia cadastrada.
+        </p>
+      `;
+
+      return;
+    }
+
+    /*
+     * Limpa a lista atual.
+     */
+    listaFotos.innerHTML = "";
+
+    /*
+     * Cria um card para cada fotografia.
+     */
+    data.forEach((foto) => {
+
+      const card =
+        document.createElement(
+          "article"
+        );
+
+      card.className =
+        "foto-card";
+
+      /*
+       * Imagem.
+       */
+      const imagem =
+        document.createElement(
+          "img"
+        );
+
+      imagem.src =
+        foto.url_imagem;
+
+      imagem.alt =
+        foto.descricao ||
+        foto.titulo ||
+        "Fotografia";
+
+      imagem.loading =
+        "lazy";
+
+      /*
+       * Informações.
+       */
+      const informacoes =
+        document.createElement(
+          "div"
+        );
+
+      informacoes.className =
+        "foto-informacoes";
+
+      const categoriaTexto =
+        foto.categoria === "hero"
+          ? "Hero"
+          : foto.categoria === "sobre"
+            ? "Sobre"
+            : "Portfólio";
+
+      informacoes.innerHTML = `
+        <span class="badge">
+          ${categoriaTexto}
+        </span>
+
+        <h3>
+          ${escaparHtml(
+            foto.titulo ||
+              "Sem título"
+          )}
+        </h3>
+
+        <p>
+          Ordem: ${foto.ordem}
+        </p>
+
+        <p>
+          Status:
+          ${
+            foto.ativo
+              ? "Ativa"
+              : "Inativa"
+          }
+        </p>
+      `;
+
+      /*
+       * Área dos botões.
+       */
+      const acoes =
+        document.createElement(
+          "div"
+        );
+
+      acoes.className =
+        "acoes";
+
+      /*
+       * Botão de ativação.
+       */
+      const botaoStatus =
+        document.createElement(
+          "button"
+        );
+
+      botaoStatus.type =
+        "button";
+
+      botaoStatus.className =
+        "botao-secundario";
+
+      botaoStatus.textContent =
+        foto.ativo
+          ? "Desativar"
+          : "Ativar";
+
+      botaoStatus.addEventListener(
+        "click",
+        () =>
+          alterarStatus(
+            foto.id,
+            !foto.ativo
+          )
+      );
+
+      /*
+       * Botão de exclusão.
+       */
+      const botaoExcluir =
+        document.createElement(
+          "button"
+        );
+
+      botaoExcluir.type =
+        "button";
+
+      botaoExcluir.className =
+        "botao-excluir";
+
+      botaoExcluir.textContent =
+        "Excluir";
+
+      botaoExcluir.addEventListener(
+        "click",
+        () =>
+          excluirFoto(foto)
+      );
+
+      acoes.append(
+        botaoStatus,
+        botaoExcluir
+      );
+
+      /*
+       * Monta o card.
+       */
+      card.append(
+        imagem,
+        informacoes,
+        acoes
+      );
+
+      listaFotos.appendChild(
+        card
+      );
+    });
+  }
+
+  /*
+   * Ativa ou desativa uma fotografia.
+   */
+  async function alterarStatus(
+    id,
+    novoStatus
+  ) {
+    const {
+      error,
+    } = await supabase
+      .from("home_fotos")
+      .update({
+        ativo: novoStatus,
+        atualizado_em:
+          new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (error) {
+      console.error(
+        "Erro ao alterar status:",
+        error
+      );
+
+      mostrarMensagem(
+        "Não foi possível alterar o status.",
+        "erro"
+      );
+
+      return;
+    }
+
+    mostrarMensagem(
+      novoStatus
+        ? "Fotografia ativada."
+        : "Fotografia desativada.",
+      "sucesso"
+    );
+
+    await carregarFotos();
+  }
+
+  /*
+   * Exclui uma fotografia.
+   *
+   * Primeiro excluímos o arquivo físico
+   * do Storage.
+   *
+   * Depois excluímos o registro do banco.
+   */
+  async function excluirFoto(
+    foto
+  ) {
+    const confirmar =
+      window.confirm(
+        "Tem certeza que deseja excluir esta fotografia?"
+      );
+
+    if (!confirmar) {
+      return;
+    }
+
+    /*
+     * Remove o arquivo do Storage.
+     */
+    if (
+      foto.caminho_arquivo
+    ) {
+      const {
+        error:
+          storageError,
+      } = await supabase.storage
+        .from(NOME_BUCKET)
+        .remove([
+          foto.caminho_arquivo,
+        ]);
+
+      if (storageError) {
+        console.error(
+          "Erro ao excluir arquivo do Storage:",
+          storageError
+        );
+
+        mostrarMensagem(
+          `Erro ao excluir arquivo: ${storageError.message}`,
+          "erro"
+        );
+
+        return;
+      }
+    }
+
+    /*
+     * Remove o registro da tabela.
+     */
+    const {
+      error:
+        bancoError,
+    } = await supabase
+      .from("home_fotos")
+      .delete()
+      .eq("id", foto.id);
+
+    if (bancoError) {
+      console.error(
+        "Erro ao excluir registro:",
+        bancoError
+      );
+
+      mostrarMensagem(
+        `O arquivo foi removido, mas houve erro no banco: ${bancoError.message}`,
+        "erro"
+      );
+
+      return;
+    }
+
+    mostrarMensagem(
+      "Fotografia excluída com sucesso.",
+      "sucesso"
+    );
+
+    await carregarFotos();
+  }
+
+  /*
+   * Faz o upload de uma nova fotografia.
+   */
+  async function enviarFotografia(
+    evento
+  ) {
+    evento.preventDefault();
+
+    /*
+     * Verifica se foi selecionado um arquivo.
+     */
+    if (
+      !(arquivo instanceof
+        HTMLInputElement) ||
+      !arquivo.files ||
+      arquivo.files.length === 0
+    ) {
+      mostrarMensagem(
+        "Selecione uma fotografia.",
+        "erro"
+      );
+
+      return;
+    }
+
+    const arquivoSelecionado =
+      arquivo.files[0];
+
+    /*
+     * Formatos permitidos.
+     */
+    const tiposPermitidos = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/avif",
+    ];
+
+    if (
+      !tiposPermitidos.includes(
+        arquivoSelecionado.type
+      )
+    ) {
+      mostrarMensagem(
+        "Formato de imagem não permitido. Use JPG, PNG, WebP ou AVIF.",
+        "erro"
+      );
+
+      return;
+    }
+
+    /*
+     * Limite de 10 MB.
+     */
+    const limite =
+      10 * 1024 * 1024;
+
+    if (
+      arquivoSelecionado.size >
+      limite
+    ) {
+      mostrarMensagem(
+        "A imagem deve ter no máximo 10 MB.",
+        "erro"
+      );
+
+      return;
+    }
+
+    /*
+     * Obtém a categoria.
+     */
+    const categoriaValor =
+      categoria instanceof
+      HTMLSelectElement
+        ? categoria.value
+        : "portfolio";
+
+    /*
+     * Obtém a extensão original.
+     */
+    const partesNome =
+      arquivoSelecionado.name
+        .split(".");
+
+    const extensao =
+      partesNome.length > 1
+        ? partesNome[
+            partesNome.length - 1
+          ].toLowerCase()
+        : "jpg";
+
+    /*
+     * Gera um nome único.
+     */
+    const nomeArquivo =
+      `${crypto.randomUUID()}.${extensao}`;
+
+    /*
+     * Organiza os arquivos por categoria.
+     */
+    const caminhoArquivo =
+      `${categoriaValor}/${nomeArquivo}`;
+
+    /*
+     * Desabilita o botão durante o upload.
+     */
+    if (
+      botaoEnviar instanceof
+      HTMLButtonElement
+    ) {
+      botaoEnviar.disabled =
+        true;
+
+      botaoEnviar.textContent =
+        "Enviando...";
+    }
+
+    mostrarMensagem(
+      "Enviando fotografia...",
+      "sucesso"
+    );
+
+    /*
+     * UPLOAD PARA O SUPABASE STORAGE
+     */
+    const {
+      error:
+        uploadError,
+    } = await supabase.storage
+      .from(NOME_BUCKET)
+      .upload(
+        caminhoArquivo,
+        arquivoSelecionado,
+        {
+          cacheControl:
+            "3600",
+
+          upsert:
+            false,
+
+          contentType:
+            arquivoSelecionado.type,
+        }
+      );
+
+    /*
+     * Verifica erro do upload.
+     */
+    if (uploadError) {
+      console.error(
+        "Erro no upload:",
+        uploadError
+      );
+
+      mostrarMensagem(
+        `Erro ao enviar fotografia: ${uploadError.message}`,
+        "erro"
+      );
+
+      if (
+        botaoEnviar instanceof
+        HTMLButtonElement
+      ) {
+        botaoEnviar.disabled =
+          false;
+
+        botaoEnviar.textContent =
+          "Enviar fotografia";
+      }
+
+      return;
+    }
+
+    /*
+     * Obtém a URL pública.
+     *
+     * O bucket fotos-catalogo precisa
+     * estar configurado como público.
+     */
+    const {
+      data:
+        publicUrlData,
+    } = supabase.storage
+      .from(NOME_BUCKET)
+      .getPublicUrl(
+        caminhoArquivo
+      );
+
+    const urlImagem =
+      publicUrlData.publicUrl;
+
+    /*
+     * Obtém os valores do formulário.
+     */
+    const tituloValor =
+      titulo instanceof
+      HTMLInputElement
+        ? titulo.value.trim()
+        : "";
+
+    const descricaoValor =
+      descricao instanceof
+      HTMLInputElement
+        ? descricao.value.trim()
+        : "";
+
+    const ordemValor =
+      ordem instanceof
+      HTMLInputElement
+        ? Number(ordem.value) || 0
+        : 0;
+
+    const ativoValor =
+      ativo instanceof
+      HTMLInputElement
+        ? ativo.checked
+        : true;
+
+    /*
+     * Registra a imagem na tabela home_fotos.
+     */
+    const {
+      error:
+        bancoError,
+    } = await supabase
+      .from("home_fotos")
+      .insert({
+        categoria:
+          categoriaValor,
+
+        titulo:
+          tituloValor || null,
+
+        descricao:
+          descricaoValor || null,
+
+        url_imagem:
+          urlImagem,
+
+        caminho_arquivo:
+          caminhoArquivo,
+
+        ordem:
+          ordemValor,
+
+        ativo:
+          ativoValor,
+      });
+
+    /*
+     * Se o banco falhar,
+     * remove o arquivo enviado.
+     */
+    if (bancoError) {
+      console.error(
+        "Erro ao salvar fotografia no banco:",
+        bancoError
+      );
+
+      await supabase.storage
+        .from(NOME_BUCKET)
+        .remove([
+          caminhoArquivo,
+        ]);
+
+      mostrarMensagem(
+        `Erro ao registrar fotografia: ${bancoError.message}`,
+        "erro"
+      );
+
+      if (
+        botaoEnviar instanceof
+        HTMLButtonElement
+      ) {
+        botaoEnviar.disabled =
+          false;
+
+        botaoEnviar.textContent =
+          "Enviar fotografia";
+      }
+
+      return;
+    }
+
+    /*
+     * Limpa o formulário.
+     */
+    if (
+      form instanceof
+      HTMLFormElement
+    ) {
+      form.reset();
+    }
+
+    /*
+     * Restaura os valores padrão.
+     */
+    if (
+      ativo instanceof
+      HTMLInputElement
+    ) {
+      ativo.checked = true;
+    }
+
+    if (
+      ordem instanceof
+      HTMLInputElement
+    ) {
+      ordem.value = "1";
+    }
+
+    /*
+     * Libera o botão.
+     */
+    if (
+      botaoEnviar instanceof
+      HTMLButtonElement
+    ) {
+      botaoEnviar.disabled =
+        false;
+
+      botaoEnviar.textContent =
+        "Enviar fotografia";
+    }
+
+    mostrarMensagem(
+      "Fotografia adicionada com sucesso!",
+      "sucesso"
+    );
+
+    /*
+     * Atualiza a lista.
+     */
+    await carregarFotos();
+  }
+
+  /*
+   * Inicialização da página.
+   */
+  async function iniciar() {
+    const administrador =
+      await verificarAdministrador();
+
+    if (!administrador) {
+      return;
+    }
+
+    await carregarFotos();
+  }
+
+  /*
+   * Evento do formulário.
+   */
+  if (
+    form instanceof
+    HTMLFormElement
+  ) {
+    form.addEventListener(
+      "submit",
+      enviarFotografia
+    );
+  }
+
+  /*
+   * Inicia a página.
+   */
+  void iniciar();
+</script>
+
+<style>
+  /*
+   * FUNDO
+   */
+  .admin-fundo {
+    min-height: 100vh;
+    padding: 60px 20px 100px;
+    background: var(--cor-fundo);
+  }
+
+  .admin-container {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+  }
+
+  /*
+   * CABEÇALHO
+   */
+  .cabecalho {
+    margin-bottom: 40px;
+  }
+
+  .voltar {
+    display: inline-block;
+    margin-bottom: 35px;
+    color: var(--cor-texto-secundario);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .voltar:hover {
+    color: var(--cor-texto);
+  }
+
+  .legenda {
+    margin-bottom: 10px;
+    color: var(--cor-destaque);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+  }
+
+  h1 {
+    margin-bottom: 15px;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 400;
+    letter-spacing: -0.04em;
+  }
+
+  .introducao {
+    color: var(--cor-texto-secundario);
+  }
+
+  /*
+   * CARDS
+   */
+  .card {
+    margin-bottom: 30px;
+    padding: 35px;
+    border: 1px solid var(--cor-borda);
+    background: var(--cor-fundo-secundario);
+  }
+
+  .card-cabecalho {
+    margin-bottom: 30px;
+  }
+
+  .card h2 {
+    font-size: 1.8rem;
+    font-weight: 400;
+  }
+
+  /*
+   * CAMPOS
+   */
+  .campo {
+    margin-bottom: 22px;
+  }
+
+  .campo label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .campo input,
+  .campo select {
+    width: 100%;
+    padding: 13px 15px;
+    border: 1px solid var(--cor-borda);
+    background: var(--cor-fundo);
+    color: var(--cor-texto);
+    font: inherit;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .campo input:focus,
+  .campo select:focus {
+    border-color: var(--cor-destaque);
+  }
+
+  .campo small {
+    display: block;
+    margin-top: 7px;
+    color: var(--cor-texto-secundario);
+    font-size: 0.8rem;
+  }
+
+  /*
+   * CHECKBOX
+   */
+  .checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 25px 0;
+    cursor: pointer;
+  }
+
+  .checkbox input {
+    width: 18px;
+    height: 18px;
+  }
+
+  /*
+   * BOTÃO PRINCIPAL
+   */
+  .botao {
+    display: inline-block;
+    padding: 13px 24px;
+    border: 0;
+    background: var(--cor-destaque);
+    color: var(--cor-fundo);
+    font: inherit;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+
+  .botao:hover {
+    opacity: 0.85;
+  }
+
+  .botao:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /*
+   * BOTÕES SECUNDÁRIOS
+   */
+  .botao-secundario,
+  .botao-excluir {
+    padding: 9px 15px;
+    border: 1px solid var(--cor-borda);
+    background: transparent;
+    color: var(--cor-texto);
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .botao-secundario:hover {
+    border-color: var(--cor-destaque);
+  }
+
+  .botao-excluir {
+    border-color: #a33;
+    color: #a33;
+  }
+
+  /*
+   * MENSAGENS
+   */
+  .mensagem {
+    margin: 20px 0;
+    padding: 14px 16px;
+    font-size: 0.9rem;
+  }
+
+  .mensagem.sucesso {
+    border: 1px solid var(--cor-destaque);
+  }
+
+  .mensagem.erro,
+  .erro {
+    border: 1px solid #a33;
+    color: #a33;
+  }
+
+  .vazio,
+  .carregando {
+    color: var(--cor-texto-secundario);
+  }
+
+  /*
+   * LISTA DE FOTOGRAFIAS
+   */
+  .lista-fotos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .foto-card {
+    overflow: hidden;
+    border: 1px solid var(--cor-borda);
+    background: var(--cor-fundo);
+  }
+
+  .foto-card > img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+  }
+
+  .foto-informacoes {
+    padding: 18px;
+  }
+
+  .foto-informacoes h3 {
+    margin: 10px 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+
+  .foto-informacoes p {
+    margin: 5px 0;
+    color: var(--cor-texto-secundario);
+    font-size: 0.85rem;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 5px 8px;
+    border: 1px solid var(--cor-borda);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /*
+   * AÇÕES
+   */
+  .acoes {
+    display: flex;
+    gap: 10px;
+    padding: 0 18px 18px;
+  }
+
+  /*
+   * RESPONSIVIDADE
+   */
+  @media (max-width: 800px) {
+    .lista-fotos {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 520px) {
+    .admin-fundo {
+      padding: 35px 15px 70px;
+    }
+
+    .card {
+      padding: 22px;
+    }
+
+    .lista-fotos {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

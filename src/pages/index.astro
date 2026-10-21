@@ -34,7 +34,7 @@ import Footer from "../components/Footer.astro";
         </div>
 
         <div class="hero-imagem">
-          <div class="imagem-placeholder">
+          <div class="imagem-placeholder" id="placeholder-hero">
             FOTO PRINCIPAL
           </div>
         </div>
@@ -45,7 +45,7 @@ import Footer from "../components/Footer.astro";
     <section id="sobre" class="secao secao-alternativa">
       <div class="container sobre">
         <div class="sobre-imagem">
-          <div class="imagem-placeholder">
+          <div class="imagem-placeholder" id="placeholder-sobre">
             FOTO DO FOTÓGRAFO
           </div>
         </div>
@@ -81,7 +81,7 @@ import Footer from "../components/Footer.astro";
           Uma seleção de momentos registrados.
         </p>
 
-        <div class="galeria">
+        <div class="galeria" id="galeria-home">
           <div class="foto-placeholder">FOTO 01</div>
           <div class="foto-placeholder">FOTO 02</div>
           <div class="foto-placeholder">FOTO 03</div>
@@ -96,15 +96,14 @@ import Footer from "../components/Footer.astro";
   <Footer />
 </Layout>
 
-<!--
-  Carrega o conteúdo público salvo no Supabase.
-  Se houver erro, os textos padrão permanecem visíveis.
--->
 <script>
+  /*
+   * Cliente do Supabase já utilizado pelo projeto.
+   */
   import { supabase } from "../lib/supabase";
 
   /*
-   * Busca somente as chaves utilizadas nesta página.
+   * Carrega os textos administráveis da página inicial.
    */
   async function carregarConteudoHome() {
     const { data, error } = await supabase
@@ -117,7 +116,7 @@ import Footer from "../components/Footer.astro";
     }
 
     /*
-     * Organiza os registros por chave.
+     * Organiza os textos por chave para facilitar a consulta.
      */
     const conteudo = new Map(
       (data ?? []).map((registro) => [
@@ -127,14 +126,18 @@ import Footer from "../components/Footer.astro";
     );
 
     /*
-     * Atualiza textos somente quando houver
-     * um valor não vazio no banco.
+     * Atualiza os elementos sem substituir textos
+     * quando o valor do banco estiver vazio.
      */
-    function atualizarTexto(id, chave) {
+    function atualizarTexto(id: string, chave: string) {
       const elemento = document.getElementById(id);
       const valor = conteudo.get(chave);
 
-      if (elemento && typeof valor === "string" && valor.trim()) {
+      if (
+        elemento &&
+        typeof valor === "string" &&
+        valor.trim()
+      ) {
         elemento.textContent = valor;
       }
     }
@@ -149,8 +152,8 @@ import Footer from "../components/Footer.astro";
     atualizarTexto("sobre-paragrafo-2", "sobre_paragrafo_2");
 
     /*
-     * Atualiza o botão somente se o destino
-     * for um caminho interno do próprio site.
+     * Atualiza o texto e o destino do botão principal.
+     * Por segurança, aceita somente caminhos internos.
      */
     const textoBotao = conteudo.get("hero_botao_texto");
     const linkBotao = conteudo.get("hero_botao_link");
@@ -173,7 +176,7 @@ import Footer from "../components/Footer.astro";
     }
 
     /*
-     * Atualiza o título e a descrição SEO.
+     * Atualiza o título e a descrição para mecanismos de busca.
      */
     const tituloSeo = conteudo.get("seo_titulo");
     const descricaoSeo = conteudo.get("seo_descricao");
@@ -197,7 +200,120 @@ import Footer from "../components/Footer.astro";
     }
   }
 
+  /*
+   * Cria uma imagem HTML usando os dados da tabela home_fotos.
+   */
+  function criarImagem(
+    foto: {
+      titulo: string | null;
+      descricao: string | null;
+      url_imagem: string;
+    },
+    classe: string
+  ) {
+    const imagem = document.createElement("img");
+
+    imagem.src = foto.url_imagem;
+    imagem.alt = foto.descricao || foto.titulo || "Fotografia";
+    imagem.className = classe;
+    imagem.loading = "lazy";
+    imagem.decoding = "async";
+
+    /*
+     * Se a URL estiver quebrada, mostra um aviso no console
+     * e evita deixar um ícone de imagem quebrada na página.
+     */
+    imagem.addEventListener("error", () => {
+      console.error("Não foi possível carregar a imagem:", imagem.src);
+      imagem.remove();
+    });
+
+    return imagem;
+  }
+
+  /*
+   * Carrega as imagens públicas e ativas da página inicial.
+   */
+  async function carregarImagensHome() {
+    const { data, error } = await supabase
+      .from("home_fotos")
+      .select("categoria, titulo, descricao, url_imagem, ordem")
+      .eq("ativo", true)
+      .order("ordem", { ascending: true });
+
+    if (error) {
+      console.error("Erro ao carregar imagens da Home:", error);
+      return;
+    }
+
+    const imagens = data ?? [];
+
+    /*
+     * Foto principal da apresentação.
+     * Seleciona a primeira imagem ativa da categoria hero.
+     */
+    const fotoHero = imagens.find(
+      (foto) => foto.categoria === "hero"
+    );
+
+    const placeholderHero = document.getElementById("placeholder-hero");
+
+    if (fotoHero && placeholderHero) {
+      const imagem = criarImagem(fotoHero, "imagem-home");
+
+      imagem.loading = "eager";
+      imagem.setAttribute("fetchpriority", "high");
+
+      placeholderHero.replaceWith(imagem);
+    }
+
+    /*
+     * Foto da seção Sobre.
+     */
+    const fotoSobre = imagens.find(
+      (foto) => foto.categoria === "sobre"
+    );
+
+    const placeholderSobre = document.getElementById("placeholder-sobre");
+
+    if (fotoSobre && placeholderSobre) {
+      placeholderSobre.replaceWith(
+        criarImagem(fotoSobre, "imagem-home")
+      );
+    }
+
+    /*
+     * Galeria do portfólio.
+     * Exibe no máximo seis imagens ativas, em ordem crescente.
+     */
+    const galeria = document.getElementById("galeria-home");
+
+    if (galeria) {
+      const fotosPortfolio = imagens
+        .filter((foto) => foto.categoria === "portfolio")
+        .slice(0, 6);
+
+      const placeholders = Array.from(
+        galeria.querySelectorAll(".foto-placeholder")
+      );
+
+      fotosPortfolio.forEach((foto, indice) => {
+        const placeholder = placeholders[indice];
+
+        if (placeholder) {
+          placeholder.replaceWith(
+            criarImagem(foto, "foto-portfolio")
+          );
+        }
+      });
+    }
+  }
+
+  /*
+   * Inicia o carregamento do conteúdo e das imagens.
+   */
   void carregarConteudoHome();
+  void carregarImagensHome();
 </script>
 
 <style>
@@ -244,10 +360,11 @@ import Footer from "../components/Footer.astro";
   }
 
   /*
-   * IMAGENS
+   * IMAGENS PRINCIPAIS
    */
   .hero-imagem {
     height: 620px;
+    overflow: hidden;
   }
 
   .imagem-placeholder {
@@ -263,6 +380,21 @@ import Footer from "../components/Footer.astro";
   }
 
   /*
+   * Imagens carregadas do Supabase Storage.
+   *
+   * IMPORTANTE: estas classes são aplicadas via JavaScript
+   * (document.createElement), por isso precisam de :global().
+   * Sem isso, o CSS scoped do Astro não alcança os elementos
+   * criados dinamicamente e as fotos ficam com tamanho natural.
+   */
+  :global(.imagem-home) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /*
    * SOBRE
    */
   .sobre {
@@ -274,6 +406,7 @@ import Footer from "../components/Footer.astro";
 
   .sobre-imagem {
     height: 500px;
+    overflow: hidden;
   }
 
   .sobre-conteudo {
@@ -288,15 +421,20 @@ import Footer from "../components/Footer.astro";
 
   /*
    * GALERIA
+   * Grid com linhas travadas: todas as células têm exatamente
+   * a mesma altura, independente do tamanho original da foto.
    */
   .galeria {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 1fr;
     gap: 20px;
   }
 
   .foto-placeholder {
-    aspect-ratio: 4 / 5;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -307,6 +445,30 @@ import Footer from "../components/Footer.astro";
   }
 
   .foto-placeholder:hover {
+    transform: translateY(-4px);
+  }
+
+  /*
+   * Fotografias reais do portfólio.
+   *
+   * Preenche 100% da célula do grid: largura e altura sempre iguais
+   * entre os cards. object-fit: cover corta sem distorcer.
+   *
+   * IMPORTANTE: o :global() é obrigatório aqui, pois a imagem é
+   * criada via JavaScript e não recebe o atributo de escopo do Astro.
+   */
+  :global(.foto-portfolio) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.3s ease;
+  }
+
+  :global(.foto-portfolio:hover) {
     transform: translateY(-4px);
   }
 
@@ -339,6 +501,7 @@ import Footer from "../components/Footer.astro";
 
     .galeria {
       grid-template-columns: repeat(2, 1fr);
+      grid-auto-rows: 1fr;
     }
   }
 
@@ -348,6 +511,11 @@ import Footer from "../components/Footer.astro";
   @media (max-width: 480px) {
     .galeria {
       grid-template-columns: 1fr;
+      grid-auto-rows: auto;
+    }
+
+    :global(.foto-portfolio) {
+      height: auto;
     }
 
     .hero h1 {
