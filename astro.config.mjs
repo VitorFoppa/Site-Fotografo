@@ -1,9 +1,8 @@
-// @ts-check
-import { defineConfig } from 'astro/config';
 
-import cloudflare from '@astrojs/cloudflare';
+import { defineConfig } from "astro/config";
 
-// https://astro.build/config
+// Configura o Astro para gerar páginas estáticas.
+// O Cloudflare Pages publicará os arquivos gerados em dist/.
 export default defineConfig({
-  adapter: cloudflare()
+  output: "static"
 });
