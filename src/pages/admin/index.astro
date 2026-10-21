@@ -1,0 +1,258 @@
+
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout titulo="Acesso administrativo | Fotógrafo">
+  <main class="admin-fundo">
+    <section class="login-card">
+      <a class="voltar" href="/">← Voltar ao site</a>
+
+      <p class="legenda">ÁREA RESTRITA</p>
+      <h1>Painel administrativo</h1>
+      <p class="introducao">
+        Entre para gerenciar os planos, preços e fotografias do seu site.
+      </p>
+
+      <form id="form-login">
+        <label for="email">E-mail</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autocomplete="username"
+          placeholder="seu@email.com"
+          required
+        />
+
+        <label for="senha">Senha</label>
+        <input
+          id="senha"
+          name="senha"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Sua senha"
+          required
+        />
+
+        <button id="botao-login" type="submit">
+          Entrar no painel
+        </button>
+
+        <p id="mensagem" class="mensagem" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+</Layout>
+
+<script>
+  import { supabase } from "../../lib/supabase";
+
+  const formulario = document.querySelector<HTMLFormElement>("#form-login");
+  const campoEmail = document.querySelector<HTMLInputElement>("#email");
+  const campoSenha = document.querySelector<HTMLInputElement>("#senha");
+  const botao = document.querySelector<HTMLButtonElement>("#botao-login");
+  const mensagem = document.querySelector<HTMLParagraphElement>("#mensagem");
+
+  // Exibe mensagens de validação e erros para o usuário.
+  function exibirMensagem(texto: string, erro = false) {
+    if (!mensagem) return;
+
+    mensagem.textContent = texto;
+    mensagem.classList.toggle("erro", erro);
+  }
+
+  // Confirma que o usuário autenticado está autorizado como administrador.
+  async function verificarAdministrador(userId: string) {
+    const { data, error } = await supabase
+      .from("administradores")
+      .select("user_id")
+      .eq("user_id", userId)
+      .eq("ativo", true)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(
+        "Não foi possível verificar a permissão administrativa."
+      );
+    }
+
+    return Boolean(data);
+  }
+
+  // Redireciona somente quando a sessão pertence a um administrador.
+  async function verificarSessaoExistente() {
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error || !data.session) return;
+
+    try {
+      const autorizado = await verificarAdministrador(
+        data.session.user.id
+      );
+
+      if (autorizado) {
+        window.location.replace("/admin/painel/");
+      } else {
+        await supabase.auth.signOut();
+      }
+    } catch {
+      exibirMensagem(
+        "Não foi possível verificar o acesso. Tente novamente.",
+        true
+      );
+    }
+  }
+
+  // Valida as credenciais e verifica a autorização administrativa.
+  formulario?.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+
+    if (!campoEmail || !campoSenha || !botao) return;
+
+    botao.disabled = true;
+    botao.textContent = "Verificando...";
+    exibirMensagem("");
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: campoEmail.value.trim(),
+        password: campoSenha.value,
+      });
+
+      if (error || !data.user) {
+        exibirMensagem("E-mail ou senha inválidos.", true);
+        return;
+      }
+
+      const autorizado = await verificarAdministrador(data.user.id);
+
+      if (!autorizado) {
+        await supabase.auth.signOut();
+        exibirMensagem(
+          "Esta conta não possui autorização administrativa.",
+          true
+        );
+        return;
+      }
+
+      window.location.replace("/admin/painel/");
+    } catch {
+      exibirMensagem(
+        "Não foi possível concluir o acesso. Confira a conexão e tente novamente.",
+        true
+      );
+    } finally {
+      botao.disabled = false;
+      botao.textContent = "Entrar no painel";
+    }
+  });
+
+  // Verifica se já existe uma sessão administrativa.
+  void verificarSessaoExistente();
+</script>
+
+<style>
+  .admin-fundo {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 30px 16px;
+    background: var(--cor-fundo-secundario);
+  }
+
+  .login-card {
+    width: min(100%, 440px);
+    padding: 38px;
+    background: var(--cor-branco);
+    border: 1px solid #e5e2dd;
+  }
+
+  .voltar {
+    display: inline-block;
+    margin-bottom: 35px;
+    color: var(--cor-texto-secundario);
+    font-size: 0.9rem;
+  }
+
+  .legenda {
+    margin-bottom: 10px;
+    color: var(--cor-destaque);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+  }
+
+  h1 {
+    margin-bottom: 12px;
+    font-size: 2rem;
+    font-weight: 500;
+    line-height: 1.15;
+  }
+
+  .introducao {
+    margin-bottom: 28px;
+    color: var(--cor-texto-secundario);
+    font-size: 0.95rem;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  label {
+    margin-top: 8px;
+    font-size: 0.9rem;
+  }
+
+  input {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #d8d4ce;
+    background: white;
+    color: var(--cor-texto);
+    font: inherit;
+  }
+
+  input:focus-visible,
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--cor-destaque);
+    outline-offset: 3px;
+  }
+
+  button {
+    margin-top: 15px;
+    padding: 14px;
+    border: 0;
+    background: var(--cor-destaque);
+    color: white;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: var(--cor-destaque-hover);
+  }
+
+  button:disabled {
+    cursor: wait;
+    opacity: 0.7;
+  }
+
+  .mensagem {
+    min-height: 1.5em;
+    font-size: 0.85rem;
+  }
+
+  .mensagem.erro {
+    color: #b42318;
+  }
+
+  @media (max-width: 480px) {
+    .login-card {
+      padding: 26px 22px;
+    }
+  }
+</style>

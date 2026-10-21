@@ -1,0 +1,228 @@
+
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout titulo="Painel administrativo | Fotógrafo">
+  <main class="painel">
+    <header class="topo">
+      <div>
+        <p class="legenda">ÁREA ADMINISTRATIVA</p>
+        <h1>Gerenciar o site</h1>
+        <p>Gerencie o conteúdo do catálogo em um só lugar.</p>
+      </div>
+
+      <button id="botao-sair" type="button">Sair</button>
+    </header>
+
+    <p id="mensagem" role="status" aria-live="polite">
+      Verificando acesso...
+    </p>
+
+    <section id="conteudo-painel" hidden>
+      <div class="cartoes">
+        <article class="cartao">
+          <span class="icone" aria-hidden="true">◇</span>
+          <h2>Planos e preços</h2>
+          <p>Cadastre pacotes, altere valores e organize os benefícios.</p>
+          <span class="estado">Próxima etapa</span>
+        </article>
+
+        <article class="cartao">
+          <span class="icone" aria-hidden="true">▧</span>
+          <h2>Fotografias</h2>
+          <p>Organize a galeria e gerencie as imagens do catálogo.</p>
+          <span class="estado">Próxima etapa</span>
+        </article>
+
+        <article class="cartao">
+          <span class="icone" aria-hidden="true">⚙</span>
+          <h2>Informações do site</h2>
+          <p>Configure descrição, contatos e informações do fotógrafo.</p>
+          <span class="estado">Próxima etapa</span>
+        </article>
+      </div>
+
+      <a class="link-site" href="/">Visualizar site público →</a>
+    </section>
+  </main>
+</Layout>
+
+<script>
+  import { supabase } from "../../lib/supabase";
+
+  const mensagem =
+    document.querySelector<HTMLParagraphElement>("#mensagem");
+
+  const conteudo =
+    document.querySelector<HTMLElement>("#conteudo-painel");
+
+  const botaoSair =
+    document.querySelector<HTMLButtonElement>("#botao-sair");
+
+  // Confere a sessão e a permissão administrativa.
+  async function carregarPainel() {
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error || !data.session) {
+      window.location.replace("/admin/");
+      return;
+    }
+
+    const { data: administrador, error: erroPermissao } =
+      await supabase
+        .from("administradores")
+        .select("user_id")
+        .eq("user_id", data.session.user.id)
+        .eq("ativo", true)
+        .maybeSingle();
+
+    if (erroPermissao || !administrador) {
+      await supabase.auth.signOut();
+      window.location.replace("/admin/");
+      return;
+    }
+
+    if (mensagem) mensagem.textContent = "Acesso autorizado.";
+    if (conteudo) conteudo.hidden = false;
+  }
+
+  // Encerra a sessão e retorna à tela de login.
+  botaoSair?.addEventListener("click", async () => {
+    if (botaoSair) botaoSair.disabled = true;
+
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      if (mensagem) {
+        mensagem.textContent = "Não foi possível sair. Tente novamente.";
+      }
+
+      if (botaoSair) botaoSair.disabled = false;
+      return;
+    }
+
+    window.location.replace("/admin/");
+  });
+
+  void carregarPainel();
+</script>
+
+<style>
+  .painel {
+    width: min(calc(100% - 40px), 1100px);
+    margin: 0 auto;
+    padding: 70px 0;
+  }
+
+  .topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .legenda {
+    margin-bottom: 10px;
+    color: var(--cor-destaque);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+  }
+
+  h1 {
+    margin-bottom: 10px;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 500;
+    line-height: 1.15;
+  }
+
+  .topo p:not(.legenda) {
+    color: var(--cor-texto-secundario);
+  }
+
+  button {
+    padding: 11px 22px;
+    border: 1px solid var(--cor-destaque);
+    background: transparent;
+    color: var(--cor-texto);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: var(--cor-fundo-secundario);
+  }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
+  #mensagem {
+    margin-bottom: 25px;
+    color: var(--cor-texto-secundario);
+  }
+
+  .cartoes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .cartao {
+    padding: 25px;
+    border: 1px solid #e5e2dd;
+    background: var(--cor-branco);
+  }
+
+  .icone {
+    display: block;
+    margin-bottom: 18px;
+    color: var(--cor-destaque);
+    font-size: 2rem;
+  }
+
+  .cartao h2 {
+    margin-bottom: 10px;
+    font-size: 1.15rem;
+    font-weight: 500;
+  }
+
+  .cartao p {
+    min-height: 75px;
+    color: var(--cor-texto-secundario);
+    font-size: 0.9rem;
+  }
+
+  .estado {
+    display: inline-block;
+    margin-top: 15px;
+    font-size: 0.8rem;
+    color: var(--cor-destaque-hover);
+  }
+
+  .link-site {
+    display: inline-block;
+    margin-top: 30px;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  @media (max-width: 800px) {
+    .cartoes {
+      grid-template-columns: 1fr;
+    }
+
+    .cartao p {
+      min-height: auto;
+    }
+  }
+
+  @media (max-width: 500px) {
+    .topo {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+</style>
