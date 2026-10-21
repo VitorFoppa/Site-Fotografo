@@ -1,0 +1,810 @@
+
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout titulo="Gerenciar planos | Fotógrafo">
+  <main class="admin-planos">
+    <header class="cabecalho">
+      <div>
+        <a class="voltar" href="/admin/painel/">← Voltar ao painel</a>
+        <p class="legenda">ÁREA ADMINISTRATIVA</p>
+        <h1>Planos fotográficos</h1>
+        <p class="introducao">
+          Cadastre pacotes, atualize preços e gerencie os benefícios.
+        </p>
+      </div>
+    </header>
+
+    <p id="mensagem" class="mensagem" role="status" aria-live="polite">
+      Verificando acesso...
+    </p>
+
+    <section id="conteudo" hidden>
+      <div class="colunas">
+        <section class="painel-formulario">
+          <h2 id="titulo-formulario">Cadastrar plano</h2>
+          <p class="ajuda">Preencha os dados do pacote fotográfico.</p>
+
+          <form id="form-plano">
+            <input id="plano-id" type="hidden" />
+
+            <label for="nome">Nome do plano *</label>
+            <input
+              id="nome"
+              type="text"
+              maxlength="100"
+              placeholder="Ex.: Ensaio"
+              required
+            />
+
+            <label for="descricao">Descrição</label>
+            <textarea
+              id="descricao"
+              rows="3"
+              maxlength="1000"
+              placeholder="Descreva o pacote fotográfico"
+            ></textarea>
+
+            <label for="preco">Preço (R$) *</label>
+            <input
+              id="preco"
+              type="number"
+              min="0"
+              max="99999999.99"
+              step="0.01"
+              placeholder="450.00"
+              required
+            />
+
+            <label for="itens">Benefícios do plano</label>
+            <textarea
+              id="itens"
+              rows="5"
+              placeholder={"Um benefício por linha\n20 fotos editadas\nEntrega digital"}
+            ></textarea>
+            <p class="ajuda">Digite um benefício por linha.</p>
+
+            <label for="ordem">Ordem de exibição</label>
+            <input id="ordem" type="number" step="1" value="0" />
+
+            <label class="opcao">
+              <input id="destaque" type="checkbox" />
+              Destacar este plano
+            </label>
+
+            <label class="opcao">
+              <input id="ativo" type="checkbox" checked />
+              Publicar no catálogo
+            </label>
+
+            <div class="acoes-formulario">
+              <button id="botao-salvar" class="botao principal" type="submit">
+                Salvar plano
+              </button>
+              <button id="botao-cancelar" class="botao secundario" type="button" hidden>
+                Cancelar edição
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="painel-lista">
+          <div class="titulo-lista">
+            <div>
+              <h2>Planos cadastrados</h2>
+              <p class="ajuda">Gerencie os pacotes existentes.</p>
+            </div>
+            <button id="botao-atualizar" class="botao secundario" type="button">
+              Atualizar
+            </button>
+          </div>
+
+          <div id="lista-planos" class="lista-planos"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+</Layout>
+
+<script>
+  import { supabase } from "../../lib/supabase";
+
+  // Tipos dos dados recebidos do Supabase.
+  type Plano = {
+    id: string;
+    nome: string;
+    descricao: string | null;
+    preco: number;
+    destaque: boolean;
+    ativo: boolean;
+    ordem: number;
+  };
+
+  type ItemPlano = {
+    id: string;
+    plano_id: string;
+    descricao: string;
+    ordem: number;
+  };
+
+  const formulario = document.querySelector<HTMLFormElement>("#form-plano")!;
+  const campoId = document.querySelector<HTMLInputElement>("#plano-id")!;
+  const campoNome = document.querySelector<HTMLInputElement>("#nome")!;
+  const campoDescricao = document.querySelector<HTMLTextAreaElement>("#descricao")!;
+  const campoPreco = document.querySelector<HTMLInputElement>("#preco")!;
+  const campoItens = document.querySelector<HTMLTextAreaElement>("#itens")!;
+  const campoOrdem = document.querySelector<HTMLInputElement>("#ordem")!;
+  const campoDestaque = document.querySelector<HTMLInputElement>("#destaque")!;
+  const campoAtivo = document.querySelector<HTMLInputElement>("#ativo")!;
+
+  const mensagem = document.querySelector<HTMLParagraphElement>("#mensagem")!;
+  const conteudo = document.querySelector<HTMLElement>("#conteudo")!;
+  const listaPlanos = document.querySelector<HTMLDivElement>("#lista-planos")!;
+  const tituloFormulario = document.querySelector<HTMLHeadingElement>("#titulo-formulario")!;
+  const botaoSalvar = document.querySelector<HTMLButtonElement>("#botao-salvar")!;
+  const botaoCancelar = document.querySelector<HTMLButtonElement>("#botao-cancelar")!;
+  const botaoAtualizar = document.querySelector<HTMLButtonElement>("#botao-atualizar")!;
+
+  let planos: Plano[] = [];
+  let itensPorPlano: Record<string, ItemPlano[]> = {};
+
+  // Exibe mensagens de sucesso, informação ou erro.
+  function exibirMensagem(texto: string, erro = false) {
+    mensagem.textContent = texto;
+    mensagem.classList.toggle("erro", erro);
+  }
+
+  // Escapa valores dinâmicos antes de incluí-los no HTML dos cards.
+  function escaparHtml(valor: string) {
+    return valor.replace(/[&<>"']/g, (caractere) => {
+      const entidades: Record<string, string> = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;",
+      };
+
+      return entidades[caractere];
+    });
+  }
+
+  // Formata o preço em reais.
+  function formatarPreco(preco: number) {
+    return Number(preco).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  }
+
+  // Confirma a sessão e a permissão administrativa.
+  async function verificarAdministrador() {
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error || !data.session) {
+      window.location.replace("/admin/");
+      return false;
+    }
+
+    const { data: administrador, error: erroPermissao } = await supabase
+      .from("administradores")
+      .select("user_id")
+      .eq("user_id", data.session.user.id)
+      .eq("ativo", true)
+      .maybeSingle();
+
+    if (erroPermissao || !administrador) {
+      await supabase.auth.signOut();
+      window.location.replace("/admin/");
+      return false;
+    }
+
+    return true;
+  }
+
+  // Busca os planos e seus benefícios no banco.
+  async function carregarPlanos() {
+    exibirMensagem("Carregando planos...");
+    listaPlanos.innerHTML = "";
+
+    const { data: dadosPlanos, error: erroPlanos } = await supabase
+      .from("planos")
+      .select("id, nome, descricao, preco, destaque, ativo, ordem")
+      .order("ordem", { ascending: true })
+      .order("nome", { ascending: true });
+
+    if (erroPlanos) {
+      exibirMensagem("Não foi possível carregar os planos.", true);
+      return;
+    }
+
+    planos = (dadosPlanos ?? []) as Plano[];
+    itensPorPlano = {};
+
+    if (planos.length > 0) {
+      const ids = planos.map((plano) => plano.id);
+
+      const { data: dadosItens, error: erroItens } = await supabase
+        .from("plano_itens")
+        .select("id, plano_id, descricao, ordem")
+        .in("plano_id", ids)
+        .order("ordem", { ascending: true });
+
+      if (erroItens) {
+        exibirMensagem(
+          "Os planos foram encontrados, mas não foi possível carregar seus benefícios.",
+          true
+        );
+        return;
+      }
+
+      for (const item of (dadosItens ?? []) as ItemPlano[]) {
+        if (!itensPorPlano[item.plano_id]) {
+          itensPorPlano[item.plano_id] = [];
+        }
+
+        itensPorPlano[item.plano_id].push(item);
+      }
+    }
+
+    renderizarPlanos();
+    exibirMensagem(`${planos.length} plano(s) encontrado(s).`);
+  }
+
+  // Monta os cards com as opções de gerenciamento.
+  function renderizarPlanos() {
+    if (planos.length === 0) {
+      listaPlanos.innerHTML =
+        '<p class="vazio">Nenhum plano cadastrado. Use o formulário para criar o primeiro.</p>';
+      return;
+    }
+
+    listaPlanos.innerHTML = planos.map((plano) => {
+      const itens = itensPorPlano[plano.id] ?? [];
+      const beneficios = itens.length
+        ? `<ul>${itens.map((item) => `<li>${escaparHtml(item.descricao)}</li>`).join("")}</ul>`
+        : '<p class="sem-itens">Nenhum benefício cadastrado.</p>';
+
+      return `
+        <article class="plano-item">
+          <div class="plano-item-topo">
+            <div>
+              <h3>${escaparHtml(plano.nome)}</h3>
+              <p class="preco">${formatarPreco(Number(plano.preco))}</p>
+            </div>
+            <span class="status ${plano.ativo ? "publicado" : "oculto"}">
+              ${plano.ativo ? "Publicado" : "Oculto"}
+            </span>
+          </div>
+
+          <p class="descricao">
+            ${escaparHtml(plano.descricao || "Sem descrição.")}
+          </p>
+
+          ${plano.destaque ? '<span class="etiqueta">Plano em destaque</span>' : ""}
+          ${beneficios}
+
+          <div class="acoes-card">
+            <button class="botao secundario" type="button" data-acao="editar" data-id="${plano.id}">
+              Editar
+            </button>
+            <button class="botao secundario" type="button" data-acao="alternar" data-id="${plano.id}">
+              ${plano.ativo ? "Ocultar" : "Publicar"}
+            </button>
+            <button class="botao excluir" type="button" data-acao="excluir" data-id="${plano.id}">
+              Excluir
+            </button>
+          </div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  // Preenche o formulário com os dados do plano escolhido.
+  function editarPlano(id: string) {
+    const plano = planos.find((item) => item.id === id);
+    if (!plano) return;
+
+    campoId.value = plano.id;
+    campoNome.value = plano.nome;
+    campoDescricao.value = plano.descricao ?? "";
+    campoPreco.value = String(plano.preco);
+    campoOrdem.value = String(plano.ordem);
+    campoDestaque.checked = plano.destaque;
+    campoAtivo.checked = plano.ativo;
+    campoItens.value = (itensPorPlano[plano.id] ?? [])
+      .map((item) => item.descricao)
+      .join("\n");
+
+    tituloFormulario.textContent = "Editar plano";
+    botaoSalvar.textContent = "Salvar alterações";
+    botaoCancelar.hidden = false;
+
+    formulario.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // Limpa o formulário e retorna ao modo de cadastro.
+  function limparFormulario() {
+    formulario.reset();
+    campoId.value = "";
+    campoOrdem.value = "0";
+    campoAtivo.checked = true;
+    tituloFormulario.textContent = "Cadastrar plano";
+    botaoSalvar.textContent = "Salvar plano";
+    botaoCancelar.hidden = true;
+  }
+
+  // Salva um plano e sincroniza sua lista de benefícios.
+  formulario.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+
+    const nome = campoNome.value.trim();
+    const preco = Number(campoPreco.value);
+    const beneficios = campoItens.value
+      .split("\n")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (!nome) {
+      exibirMensagem("Informe o nome do plano.", true);
+      return;
+    }
+
+    if (campoPreco.value.trim() === "" || !Number.isFinite(preco) || preco < 0) {
+      exibirMensagem("Informe um preço válido, igual ou maior que zero.", true);
+      return;
+    }
+
+    const ordem = Number(campoOrdem.value || 0);
+
+    if (!Number.isInteger(ordem)) {
+      exibirMensagem("A ordem deve ser um número inteiro.", true);
+      return;
+    }
+
+    botaoSalvar.disabled = true;
+    botaoSalvar.textContent = "Salvando...";
+
+    try {
+      const dadosPlano = {
+        nome,
+        descricao: campoDescricao.value.trim() || null,
+        preco,
+        destaque: campoDestaque.checked,
+        ativo: campoAtivo.checked,
+        ordem,
+        atualizado_em: new Date().toISOString(),
+      };
+
+      let planoId = campoId.value;
+
+      if (planoId) {
+        const { error } = await supabase
+          .from("planos")
+          .update(dadosPlano)
+          .eq("id", planoId);
+
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("planos")
+          .insert(dadosPlano)
+          .select("id")
+          .single();
+
+        if (error) throw error;
+        planoId = data.id;
+      }
+
+      // Substitui os benefícios existentes pelos informados no formulário.
+      const { error: erroExcluirItens } = await supabase
+        .from("plano_itens")
+        .delete()
+        .eq("plano_id", planoId);
+
+      if (erroExcluirItens) {
+        throw new Error(
+          "O plano foi salvo, mas não foi possível atualizar seus benefícios."
+        );
+      }
+
+      if (beneficios.length > 0) {
+        const novosItens = beneficios.map((descricao, indice) => ({
+          plano_id: planoId,
+          descricao,
+          ordem: indice + 1,
+        }));
+
+        const { error: erroInserirItens } = await supabase
+          .from("plano_itens")
+          .insert(novosItens);
+
+        if (erroInserirItens) {
+          throw new Error(
+            "O plano foi salvo, mas não foi possível cadastrar todos os benefícios."
+          );
+        }
+      }
+
+      limparFormulario();
+      await carregarPlanos();
+      exibirMensagem("Plano salvo com sucesso.");
+    } catch (erro) {
+      const detalhe = erro instanceof Error ? erro.message : "";
+      exibirMensagem(
+        detalhe || "Não foi possível salvar o plano. Verifique as permissões.",
+        true
+      );
+    } finally {
+      botaoSalvar.disabled = false;
+      botaoSalvar.textContent = campoId.value
+        ? "Salvar alterações"
+        : "Salvar plano";
+    }
+  });
+
+  // Trata as ações de editar, publicar/ocultar e excluir.
+  listaPlanos.addEventListener("click", async (evento) => {
+    const alvo = evento.target;
+
+    if (!(alvo instanceof Element)) return;
+
+    const botao = alvo.closest<HTMLButtonElement>("button[data-acao]");
+    if (!botao) return;
+
+    const id = botao.dataset.id;
+    const acao = botao.dataset.acao;
+
+    if (!id || !acao) return;
+
+    const plano = planos.find((item) => item.id === id);
+    if (!plano) return;
+
+    if (acao === "editar") {
+      editarPlano(id);
+      return;
+    }
+
+    if (acao === "alternar") {
+      botao.disabled = true;
+
+      const { error } = await supabase
+        .from("planos")
+        .update({
+          ativo: !plano.ativo,
+          atualizado_em: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (error) {
+        exibirMensagem("Não foi possível alterar a publicação do plano.", true);
+      } else {
+        exibirMensagem(
+          plano.ativo ? "Plano ocultado do catálogo." : "Plano publicado."
+        );
+        await carregarPlanos();
+      }
+
+      return;
+    }
+
+    if (acao === "excluir") {
+      const confirmado = window.confirm(
+        `Deseja excluir o plano "${plano.nome}"? Os benefícios associados também serão excluídos. Esta ação não pode ser desfeita.`
+      );
+
+      if (!confirmado) return;
+
+      botao.disabled = true;
+
+      const { error } = await supabase
+        .from("planos")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        exibirMensagem("Não foi possível excluir o plano.", true);
+      } else {
+        if (campoId.value === id) limparFormulario();
+        exibirMensagem("Plano excluído.");
+        await carregarPlanos();
+      }
+    }
+  });
+
+  // Cancela a edição atual.
+  botaoCancelar.addEventListener("click", limparFormulario);
+
+  // Atualiza a lista manualmente.
+  botaoAtualizar.addEventListener("click", () => {
+    void carregarPlanos();
+  });
+
+  // Inicializa a página somente para administradores autorizados.
+  async function iniciar() {
+    const autorizado = await verificarAdministrador();
+    if (!autorizado) return;
+
+    conteudo.hidden = false;
+    await carregarPlanos();
+  }
+
+  void iniciar();
+</script>
+
+<style>
+  .admin-planos {
+    width: min(calc(100% - 40px), 1200px);
+    margin: 0 auto;
+    padding: 50px 0 80px;
+  }
+
+  .cabecalho {
+    margin-bottom: 25px;
+  }
+
+  .voltar {
+    display: inline-block;
+    margin-bottom: 28px;
+    color: var(--cor-texto-secundario);
+    font-size: 0.9rem;
+  }
+
+  .legenda {
+    color: var(--cor-destaque);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+  }
+
+  h1 {
+    margin: 8px 0;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 500;
+    line-height: 1.15;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+    font-weight: 500;
+  }
+
+  .introducao,
+  .ajuda {
+    color: var(--cor-texto-secundario);
+    font-size: 0.9rem;
+  }
+
+  .mensagem {
+    margin-bottom: 20px;
+    color: var(--cor-texto-secundario);
+    font-size: 0.9rem;
+  }
+
+  .mensagem.erro {
+    color: #b42318;
+  }
+
+  .colunas {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.4fr);
+    align-items: start;
+    gap: 25px;
+  }
+
+  .painel-formulario,
+  .painel-lista {
+    min-width: 0;
+    padding: 25px;
+    border: 1px solid #e5e2dd;
+    background: var(--cor-branco);
+  }
+
+  .painel-formulario .ajuda {
+    margin: 5px 0 20px;
+  }
+
+  #form-plano {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #form-plano > label:not(.opcao) {
+    margin-top: 10px;
+    font-size: 0.9rem;
+  }
+
+  #form-plano input:not([type="checkbox"]),
+  #form-plano textarea {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #d8d4ce;
+    border-radius: 0;
+    background: white;
+    color: var(--cor-texto);
+    font: inherit;
+  }
+
+  #form-plano textarea {
+    resize: vertical;
+  }
+
+  .opcao {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    font-size: 0.9rem;
+  }
+
+  .opcao input {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--cor-destaque);
+  }
+
+  .acoes-formulario {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .botao {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    border: 1px solid #d8d4ce;
+    background: white;
+    color: var(--cor-texto);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .botao:hover {
+    background: var(--cor-fundo-secundario);
+  }
+
+  .botao:disabled {
+    cursor: wait;
+    opacity: 0.6;
+  }
+
+  .botao.principal {
+    border-color: var(--cor-destaque);
+    background: var(--cor-destaque);
+    color: white;
+  }
+
+  .botao.principal:hover {
+    background: var(--cor-destaque-hover);
+  }
+
+  .botao.excluir {
+    border-color: #e3b6b1;
+    color: #a1261b;
+  }
+
+  .titulo-lista {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .titulo-lista .ajuda {
+    margin-top: 5px;
+  }
+
+  .lista-planos {
+    display: grid;
+    gap: 15px;
+  }
+
+  .plano-item {
+    padding: 18px;
+    border: 1px solid #e5e2dd;
+  }
+
+  .plano-item-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .plano-item h3 {
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+
+  .preco {
+    margin-top: 5px;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  .status,
+  .etiqueta {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  .publicado {
+    background: #e5f4e8;
+    color: #216e39;
+  }
+
+  .oculto {
+    background: #f1efeb;
+    color: #6b6863;
+  }
+
+  .etiqueta {
+    margin-top: 10px;
+    background: #f4ecdf;
+    color: #806346;
+  }
+
+  .descricao,
+  .sem-itens {
+    margin-top: 12px;
+    color: var(--cor-texto-secundario);
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+  }
+
+  .plano-item ul {
+    margin: 12px 0 0 20px;
+    font-size: 0.9rem;
+  }
+
+  .plano-item li {
+    margin-bottom: 4px;
+    overflow-wrap: anywhere;
+  }
+
+  .acoes-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .vazio {
+    color: var(--cor-texto-secundario);
+    font-size: 0.9rem;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  @media (max-width: 850px) {
+    .colunas {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 500px) {
+    .admin-planos {
+      width: calc(100% - 24px);
+      padding-top: 30px;
+    }
+
+    .painel-formulario,
+    .painel-lista {
+      padding: 17px;
+    }
+
+    .plano-item {
+      padding: 14px;
+    }
+  }
+</style>

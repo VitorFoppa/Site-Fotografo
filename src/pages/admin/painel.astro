@@ -24,8 +24,13 @@ import Layout from "../../layouts/Layout.astro";
         <article class="cartao">
           <span class="icone" aria-hidden="true">◇</span>
           <h2>Planos e preços</h2>
-          <p>Cadastre pacotes, altere valores e organize os benefícios.</p>
-          <span class="estado">Próxima etapa</span>
+          <p>
+            Cadastre pacotes, altere valores, edite benefícios
+            e ative ou desative planos fotográficos.
+          </p>
+          <a href="/admin/planos/" class="botao-cartao">
+            Gerenciar planos
+          </a>
         </article>
 
         <article class="cartao">
@@ -225,4 +230,30 @@ import Layout from "../../layouts/Layout.astro";
       flex-direction: column;
     }
   }
+
+
+/* Botão para acessar o gerenciamento de cada recurso */
+.botao-cartao {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 10px 16px;
+  background-color: var(--cor-destaque);
+  color: var(--cor-branco);
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+/* Efeito visual ao passar o mouse */
+.botao-cartao:hover {
+  background-color: var(--cor-destaque-hover);
+}
+
+/* Destaque de acessibilidade ao navegar pelo teclado */
+.botao-cartao:focus-visible {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 3px;
+}
+
 </style>
