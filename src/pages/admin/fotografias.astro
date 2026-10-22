@@ -127,6 +127,7 @@ import Layout from "../../layouts/Layout.astro";
             <small>
               Formatos aceitos: JPG, PNG, WebP e AVIF.
               Tamanho máximo: 10 MB.
+              JPG e PNG são convertidos automaticamente para WebP.
             </small>
           </div>
 
@@ -209,6 +210,28 @@ import Layout from "../../layouts/Layout.astro";
   const NOME_BUCKET = "fotos-catalogo";
 
   /*
+   * Configurações da otimização.
+   *
+   * A imagem nunca será aumentada.
+   *
+   * Imagens com largura/altura máxima de 2000px
+   * e até 1,5 MB são consideradas já otimizadas
+   * quando forem WebP ou AVIF.
+   */
+  const LARGURA_MAXIMA = 2000;
+  const ALTURA_MAXIMA = 2000;
+  const TAMANHO_MAXIMO_OTIMIZADO =
+    1.5 * 1024 * 1024;
+
+  /*
+   * Qualidade utilizada na geração do WebP.
+   *
+   * 0.82 oferece uma boa relação entre
+   * qualidade visual e tamanho do arquivo.
+   */
+  const QUALIDADE_WEBP = 0.82;
+
+  /*
    * Elementos do formulário.
    */
   const form =
@@ -285,66 +308,92 @@ import Layout from "../../layouts/Layout.astro";
    * e possui um cadastro ativo na tabela
    * administradores.
    */
+  async function verificarAdministrador() {
+    /*
+     * Verifica se existe uma sessão autenticada.
+     */
+    const {
+      data: sessaoData,
+      error: sessaoError,
+    } =
+      await supabase.auth.getSession();
 
-async function verificarAdministrador() {
-  // Verifica se existe uma sessão autenticada.
-  const { data: sessaoData, error: sessaoError } =
-    await supabase.auth.getSession();
+    if (sessaoError) {
+      console.error(
+        "Erro ao verificar sessão:",
+        sessaoError
+      );
 
-  if (sessaoError) {
-    console.error("Erro ao verificar sessão:", sessaoError);
+      mostrarMensagem(
+        `Erro ao verificar login: ${sessaoError.message}`,
+        "erro"
+      );
 
-    mostrarMensagem(
-      `Erro ao verificar login: ${sessaoError.message}`,
-      "erro"
-    );
+      return false;
+    }
 
-    return false;
+    /*
+     * Se não estiver autenticado,
+     * volta para o login.
+     */
+    if (!sessaoData.session) {
+      window.location.replace(
+        "/admin/"
+      );
+
+      return false;
+    }
+
+    const userId =
+      sessaoData.session.user.id;
+
+    /*
+     * Consulta o administrador usando
+     * o ID do usuário autenticado.
+     *
+     * Não selecionamos uma coluna "id"
+     * que pode não existir.
+     */
+    const {
+      data: administrador,
+      error: adminError,
+    } =
+      await supabase
+        .from("administradores")
+        .select("user_id")
+        .eq("user_id", userId)
+        .eq("ativo", true)
+        .maybeSingle();
+
+    if (adminError) {
+      console.error(
+        "Erro ao consultar administradores:",
+        adminError
+      );
+
+      mostrarMensagem(
+        `Não foi possível validar o administrador: ${adminError.message}`,
+        "erro"
+      );
+
+      return false;
+    }
+
+    /*
+     * Impede o acesso caso não exista
+     * um cadastro ativo.
+     */
+    if (!administrador) {
+      mostrarMensagem(
+        "O usuário autenticado não possui um cadastro de administrador ativo. Confira a tabela administradores.",
+        "erro"
+      );
+
+      return false;
+    }
+
+    return true;
   }
-
-  // Se não estiver autenticado, volta para o login.
-  if (!sessaoData.session) {
-    window.location.replace("/admin/");
-    return false;
-  }
-
-  const userId = sessaoData.session.user.id;
-
-  // Consulta o administrador usando o ID do usuário autenticado.
-  // Não selecionamos uma coluna "id" que pode não existir.
-  const { data: administrador, error: adminError } = await supabase
-    .from("administradores")
-    .select("user_id")
-    .eq("user_id", userId)
-    .eq("ativo", true)
-    .maybeSingle();
-
-  if (adminError) {
-    console.error(
-      "Erro ao consultar administradores:",
-      adminError
-    );
-
-    mostrarMensagem(
-      `Não foi possível validar o administrador: ${adminError.message}`,
-      "erro"
-    );
-
-    return false;
-  }
-
-  // Impede o acesso caso não exista um cadastro ativo.
-  if (!administrador) {
-    mostrarMensagem(
-      "O usuário autenticado não possui um cadastro de administrador ativo. Confira a tabela administradores.",
-      "erro"
-    );
-
-    return false;
-  }
-
-  return true;
-}
 
   /*
    * Escapa textos antes de inseri-los
@@ -358,6 +407,488 @@ async function verificarAdministrador() {
       valor ?? "";
 
     return elemento.innerHTML;
+  }
+
+  /*
+   * Obtém as dimensões de uma imagem.
+   *
+   * Usa createImageBitmap quando disponível.
+   * Caso não esteja disponível no navegador,
+   * utiliza Image como alternativa.
+   */
+  async function obterDimensoesImagem(
+    arquivoImagem
+  ) {
+    /*
+     * Tenta utilizar createImageBitmap.
+     */
+    if (
+      typeof createImageBitmap ===
+      "function"
+    ) {
+      try {
+        const bitmap =
+          await createImageBitmap(
+            arquivoImagem
+          );
+
+        const dimensoes = {
+          largura:
+            bitmap.width,
+
+          altura:
+            bitmap.height,
+        };
+
+        bitmap.close();
+
+        return dimensoes;
+      } catch (erro) {
+        console.warn(
+          "Não foi possível utilizar createImageBitmap. Tentando Image.",
+          erro
+        );
+      }
+    }
+
+    /*
+     * Fallback usando Image.
+     */
+    return await new Promise(
+      (resolve, reject) => {
+        const url =
+          URL.createObjectURL(
+            arquivoImagem
+          );
+
+        const imagem =
+          new Image();
+
+        imagem.onload = () => {
+          URL.revokeObjectURL(
+            url
+          );
+
+          resolve({
+            largura:
+              imagem.naturalWidth,
+
+            altura:
+              imagem.naturalHeight,
+          });
+        };
+
+        imagem.onerror = () => {
+          URL.revokeObjectURL(
+            url
+          );
+
+          reject(
+            new Error(
+              "Não foi possível ler as dimensões da imagem."
+            )
+          );
+        };
+
+        imagem.src = url;
+      }
+    );
+  }
+
+  /*
+   * Verifica se uma imagem WebP ou AVIF
+   * já está dentro dos parâmetros definidos.
+   *
+   * Critérios:
+   *
+   * - largura <= 2000px
+   * - altura <= 2000px
+   * - tamanho <= 1,5 MB
+   */
+  async function imagemJaEstaOtimizada(
+    arquivoImagem
+  ) {
+    const tipo =
+      arquivoImagem.type.toLowerCase();
+
+    /*
+     * JPG e PNG nunca são considerados
+     * otimizados porque queremos convertê-los
+     * para WebP.
+     */
+    if (
+      tipo === "image/jpeg" ||
+      tipo === "image/png"
+    ) {
+      return false;
+    }
+
+    /*
+     * Somente WebP e AVIF podem passar
+     * pela verificação de imagem já otimizada.
+     */
+    if (
+      tipo !== "image/webp" &&
+      tipo !== "image/avif"
+    ) {
+      return false;
+    }
+
+    /*
+     * Verifica tamanho do arquivo.
+     */
+    if (
+      arquivoImagem.size >
+      TAMANHO_MAXIMO_OTIMIZADO
+    ) {
+      return false;
+    }
+
+    /*
+     * Verifica dimensões.
+     */
+    const dimensoes =
+      await obterDimensoesImagem(
+        arquivoImagem
+      );
+
+    if (
+      dimensoes.largura >
+        LARGURA_MAXIMA ||
+      dimensoes.altura >
+        ALTURA_MAXIMA
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /*
+   * Converte e otimiza uma imagem utilizando
+   * Canvas diretamente no navegador.
+   *
+   * Resultado:
+   * File no formato WebP.
+   */
+  async function converterParaWebp(
+    arquivoImagem
+  ) {
+    /*
+     * Cria uma URL temporária para a imagem.
+     */
+    const url =
+      URL.createObjectURL(
+        arquivoImagem
+      );
+
+    try {
+      /*
+       * Carrega a imagem.
+       */
+      const imagem =
+        await new Promise(
+          (resolve, reject) => {
+            const elemento =
+              new Image();
+
+            elemento.onload = () => {
+              resolve(
+                elemento
+              );
+            };
+
+            elemento.onerror =
+              () => {
+                reject(
+                  new Error(
+                    "Não foi possível abrir a imagem selecionada."
+                  )
+                );
+              };
+
+            elemento.src = url;
+          }
+        );
+
+      /*
+       * Dimensões originais.
+       */
+      const larguraOriginal =
+        imagem.naturalWidth;
+
+      const alturaOriginal =
+        imagem.naturalHeight;
+
+      /*
+       * Calcula o fator de redução.
+       *
+       * Nunca aumenta a imagem.
+       */
+      const fator =
+        Math.min(
+          1,
+
+          LARGURA_MAXIMA /
+            larguraOriginal,
+
+          ALTURA_MAXIMA /
+            alturaOriginal
+        );
+
+      /*
+       * Calcula as novas dimensões.
+       */
+      const novaLargura =
+        Math.round(
+          larguraOriginal *
+            fator
+        );
+
+      const novaAltura =
+        Math.round(
+          alturaOriginal *
+            fator
+        );
+
+      /*
+       * Cria o Canvas.
+       */
+      const canvas =
+        document.createElement(
+          "canvas"
+        );
+
+      canvas.width =
+        novaLargura;
+
+      canvas.height =
+        novaAltura;
+
+      /*
+       * Obtém o contexto 2D.
+       */
+      const contexto =
+        canvas.getContext(
+          "2d"
+        );
+
+      if (!contexto) {
+        throw new Error(
+          "O navegador não conseguiu criar o Canvas."
+        );
+      }
+
+      /*
+       * Melhora a qualidade da redução.
+       */
+      contexto.imageSmoothingEnabled =
+        true;
+
+      contexto.imageSmoothingQuality =
+        "high";
+
+      /*
+       * Desenha a imagem no tamanho final.
+       */
+      contexto.drawImage(
+        imagem,
+        0,
+        0,
+        novaLargura,
+        novaAltura
+      );
+
+      /*
+       * Converte o Canvas para WebP.
+       */
+      const blob =
+        await new Promise(
+          (resolve, reject) => {
+            canvas.toBlob(
+              (resultado) => {
+                if (!resultado) {
+                  reject(
+                    new Error(
+                      "Não foi possível converter a imagem para WebP."
+                    )
+                  );
+
+                  return;
+                }
+
+                resolve(
+                  resultado
+                );
+              },
+              "image/webp",
+              QUALIDADE_WEBP
+            );
+          }
+        );
+
+      /*
+       * Cria um nome novo para o arquivo.
+       *
+       * O nome original não é utilizado
+       * para evitar caracteres problemáticos.
+       */
+      const nomeBase =
+        arquivoImagem.name
+          .replace(
+            /\.[^/.]+$/,
+            ""
+          )
+          .replace(
+            /[^a-zA-Z0-9-_]/g,
+            "-"
+          )
+          .replace(
+            /-+/g,
+            "-"
+          )
+          .replace(
+            /^-|-$/g,
+            ""
+          );
+
+      const nomeFinal =
+        nomeBase ||
+        "fotografia";
+
+      /*
+       * Retorna um File real.
+       */
+      return new File(
+        [blob],
+        `${nomeFinal}.webp`,
+        {
+          type:
+            "image/webp",
+
+          lastModified:
+            Date.now(),
+        }
+      );
+    } finally {
+      /*
+       * Libera a URL temporária.
+       */
+      URL.revokeObjectURL(
+        url
+      );
+    }
+  }
+
+  /*
+   * Prepara a imagem antes do upload.
+   *
+   * Retorna:
+   *
+   * - o arquivo original caso ele já esteja otimizado;
+   * - um novo WebP caso precise ser convertido.
+   */
+  async function prepararImagem(
+    arquivoOriginal
+  ) {
+    /*
+     * Verifica se a imagem já está otimizada.
+     */
+    const jaOtimizada =
+      await imagemJaEstaOtimizada(
+        arquivoOriginal
+      );
+
+    if (jaOtimizada) {
+      console.log(
+        "Imagem já está otimizada:",
+        {
+          nome:
+            arquivoOriginal.name,
+
+          tamanho:
+            arquivoOriginal.size,
+
+          tipo:
+            arquivoOriginal.type,
+        }
+      );
+
+      return {
+        arquivo:
+          arquivoOriginal,
+
+        foiConvertida:
+          false,
+      };
+    }
+
+    /*
+     * Caso não esteja otimizada,
+     * converte para WebP.
+     */
+    console.log(
+      "Imagem será convertida para WebP:",
+      arquivoOriginal.name
+    );
+
+    const arquivoWebp =
+      await converterParaWebp(
+        arquivoOriginal
+      );
+
+    console.log(
+      "Imagem otimizada:",
+      {
+        original:
+          arquivoOriginal.size,
+
+        otimizado:
+          arquivoWebp.size,
+
+        reducao:
+          `${(
+            (1 -
+              arquivoWebp.size /
+                arquivoOriginal.size) *
+            100
+          ).toFixed(1)}%`,
+      }
+    );
+
+    return {
+      arquivo:
+        arquivoWebp,
+
+      foiConvertida:
+        true,
+    };
+  }
+
+  /*
+   * Formata bytes para mostrar
+   * um tamanho amigável na interface.
+   */
+  function formatarTamanho(
+    bytes
+  ) {
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+
+    if (
+      bytes <
+      1024 * 1024
+    ) {
+      return `${(
+        bytes / 1024
+      ).toFixed(1)} KB`;
+    }
+
+    return `${(
+      bytes /
+      (1024 * 1024)
+    ).toFixed(2)} MB`;
   }
 
   /*
@@ -424,7 +955,6 @@ async function verificarAdministrador() {
      * Cria um card para cada fotografia.
      */
     data.forEach((foto) => {
-
       const card =
         document.createElement(
           "article"
@@ -755,7 +1285,7 @@ async function verificarAdministrador() {
     }
 
     /*
-     * Limite de 10 MB.
+     * Limite de 10 MB para o arquivo original.
      */
     const limite =
       10 * 1024 * 1024;
@@ -782,33 +1312,7 @@ async function verificarAdministrador() {
         : "portfolio";
 
     /*
-     * Obtém a extensão original.
-     */
-    const partesNome =
-      arquivoSelecionado.name
-        .split(".");
-
-    const extensao =
-      partesNome.length > 1
-        ? partesNome[
-            partesNome.length - 1
-          ].toLowerCase()
-        : "jpg";
-
-    /*
-     * Gera um nome único.
-     */
-    const nomeArquivo =
-      `${crypto.randomUUID()}.${extensao}`;
-
-    /*
-     * Organiza os arquivos por categoria.
-     */
-    const caminhoArquivo =
-      `${categoriaValor}/${nomeArquivo}`;
-
-    /*
-     * Desabilita o botão durante o upload.
+     * Desabilita o botão durante o processamento.
      */
     if (
       botaoEnviar instanceof
@@ -818,162 +1322,291 @@ async function verificarAdministrador() {
         true;
 
       botaoEnviar.textContent =
-        "Enviando...";
+        "Verificando imagem...";
     }
 
-    mostrarMensagem(
-      "Enviando fotografia...",
-      "sucesso"
-    );
-
-    /*
-     * UPLOAD PARA O SUPABASE STORAGE
-     */
-    const {
-      error:
-        uploadError,
-    } = await supabase.storage
-      .from(NOME_BUCKET)
-      .upload(
-        caminhoArquivo,
-        arquivoSelecionado,
-        {
-          cacheControl:
-            "3600",
-
-          upsert:
-            false,
-
-          contentType:
-            arquivoSelecionado.type,
-        }
-      );
-
-    /*
-     * Verifica erro do upload.
-     */
-    if (uploadError) {
-      console.error(
-        "Erro no upload:",
-        uploadError
-      );
-
+    try {
+      /*
+       * Verifica se a imagem já está otimizada
+       * ou se precisa ser convertida.
+       */
       mostrarMensagem(
-        `Erro ao enviar fotografia: ${uploadError.message}`,
-        "erro"
+        "Verificando a imagem...",
+        "sucesso"
       );
 
+      const resultado =
+        await prepararImagem(
+          arquivoSelecionado
+        );
+
+      const arquivoFinal =
+        resultado.arquivo;
+
+      /*
+       * Mostra informações sobre o processamento.
+       */
+      if (
+        resultado.foiConvertida
+      ) {
+        mostrarMensagem(
+          `Imagem otimizada: ${formatarTamanho(
+            arquivoSelecionado.size
+          )} → ${formatarTamanho(
+            arquivoFinal.size
+          )}.`,
+          "sucesso"
+        );
+      } else {
+        mostrarMensagem(
+          "A imagem já estava otimizada. O arquivo original será utilizado.",
+          "sucesso"
+        );
+      }
+
+      /*
+       * Obtém a extensão do arquivo final.
+       *
+       * Quando convertido, será sempre WebP.
+       */
+      const extensao =
+        arquivoFinal.type ===
+        "image/webp"
+          ? "webp"
+          : arquivoFinal.type ===
+              "image/avif"
+            ? "avif"
+            : "webp";
+
+      /*
+       * Gera um nome único.
+       */
+      const nomeArquivo =
+        `${crypto.randomUUID()}.${extensao}`;
+
+      /*
+       * Organiza os arquivos por categoria.
+       */
+      const caminhoArquivo =
+        `${categoriaValor}/${nomeArquivo}`;
+
+      /*
+       * Atualiza o botão.
+       */
       if (
         botaoEnviar instanceof
         HTMLButtonElement
       ) {
-        botaoEnviar.disabled =
-          false;
-
         botaoEnviar.textContent =
-          "Enviar fotografia";
+          "Enviando...";
       }
 
-      return;
-    }
-
-    /*
-     * Obtém a URL pública.
-     *
-     * O bucket fotos-catalogo precisa
-     * estar configurado como público.
-     */
-    const {
-      data:
-        publicUrlData,
-    } = supabase.storage
-      .from(NOME_BUCKET)
-      .getPublicUrl(
-        caminhoArquivo
+      mostrarMensagem(
+        "Enviando fotografia otimizada...",
+        "sucesso"
       );
 
-    const urlImagem =
-      publicUrlData.publicUrl;
-
-    /*
-     * Obtém os valores do formulário.
-     */
-    const tituloValor =
-      titulo instanceof
-      HTMLInputElement
-        ? titulo.value.trim()
-        : "";
-
-    const descricaoValor =
-      descricao instanceof
-      HTMLInputElement
-        ? descricao.value.trim()
-        : "";
-
-    const ordemValor =
-      ordem instanceof
-      HTMLInputElement
-        ? Number(ordem.value) || 0
-        : 0;
-
-    const ativoValor =
-      ativo instanceof
-      HTMLInputElement
-        ? ativo.checked
-        : true;
-
-    /*
-     * Registra a imagem na tabela home_fotos.
-     */
-    const {
-      error:
-        bancoError,
-    } = await supabase
-      .from("home_fotos")
-      .insert({
-        categoria:
-          categoriaValor,
-
-        titulo:
-          tituloValor || null,
-
-        descricao:
-          descricaoValor || null,
-
-        url_imagem:
-          urlImagem,
-
-        caminho_arquivo:
-          caminhoArquivo,
-
-        ordem:
-          ordemValor,
-
-        ativo:
-          ativoValor,
-      });
-
-    /*
-     * Se o banco falhar,
-     * remove o arquivo enviado.
-     */
-    if (bancoError) {
-      console.error(
-        "Erro ao salvar fotografia no banco:",
-        bancoError
-      );
-
-      await supabase.storage
+      /*
+       * UPLOAD PARA O SUPABASE STORAGE
+       */
+      const {
+        error:
+          uploadError,
+      } = await supabase.storage
         .from(NOME_BUCKET)
-        .remove([
+        .upload(
           caminhoArquivo,
-        ]);
+          arquivoFinal,
+          {
+            cacheControl:
+              "3600",
+
+            upsert:
+              false,
+
+            contentType:
+              arquivoFinal.type,
+          }
+        );
+
+      /*
+       * Verifica erro do upload.
+       */
+      if (uploadError) {
+        console.error(
+          "Erro no upload:",
+          uploadError
+        );
+
+        mostrarMensagem(
+          `Erro ao enviar fotografia: ${uploadError.message}`,
+          "erro"
+        );
+
+        return;
+      }
+
+      /*
+       * Obtém a URL pública.
+       *
+       * O bucket fotos-catalogo precisa
+       * estar configurado como público.
+       */
+      const {
+        data:
+          publicUrlData,
+      } = supabase.storage
+        .from(NOME_BUCKET)
+        .getPublicUrl(
+          caminhoArquivo
+        );
+
+      const urlImagem =
+        publicUrlData.publicUrl;
+
+      /*
+       * Obtém os valores do formulário.
+       */
+      const tituloValor =
+        titulo instanceof
+        HTMLInputElement
+          ? titulo.value.trim()
+          : "";
+
+      const descricaoValor =
+        descricao instanceof
+        HTMLInputElement
+          ? descricao.value.trim()
+          : "";
+
+      const ordemValor =
+        ordem instanceof
+        HTMLInputElement
+          ? Number(ordem.value) || 0
+          : 0;
+
+      const ativoValor =
+        ativo instanceof
+        HTMLInputElement
+          ? ativo.checked
+          : true;
+
+      /*
+       * Registra a imagem na tabela home_fotos.
+       */
+      const {
+        error:
+          bancoError,
+      } = await supabase
+        .from("home_fotos")
+        .insert({
+          categoria:
+            categoriaValor,
+
+          titulo:
+            tituloValor || null,
+
+          descricao:
+            descricaoValor || null,
+
+          url_imagem:
+            urlImagem,
+
+          caminho_arquivo:
+            caminhoArquivo,
+
+          ordem:
+            ordemValor,
+
+          ativo:
+            ativoValor,
+        });
+
+      /*
+       * Se o banco falhar,
+       * remove o arquivo enviado.
+       */
+      if (bancoError) {
+        console.error(
+          "Erro ao salvar fotografia no banco:",
+          bancoError
+        );
+
+        await supabase.storage
+          .from(NOME_BUCKET)
+          .remove([
+            caminhoArquivo,
+          ]);
+
+        mostrarMensagem(
+          `Erro ao registrar fotografia: ${bancoError.message}`,
+          "erro"
+        );
+
+        return;
+      }
+
+      /*
+       * Limpa o formulário.
+       */
+      if (
+        form instanceof
+        HTMLFormElement
+      ) {
+        form.reset();
+      }
+
+      /*
+       * Restaura os valores padrão.
+       */
+      if (
+        ativo instanceof
+        HTMLInputElement
+      ) {
+        ativo.checked = true;
+      }
+
+      if (
+        ordem instanceof
+        HTMLInputElement
+      ) {
+        ordem.value = "1";
+      }
+
+      /*
+       * Libera o botão.
+       */
+      mostrarMensagem(
+        "Fotografia adicionada com sucesso!",
+        "sucesso"
+      );
+
+      /*
+       * Atualiza a lista.
+       */
+      await carregarFotos();
+
+    } catch (erro) {
+      console.error(
+        "Erro ao processar fotografia:",
+        erro
+      );
+
+      const mensagemErro =
+        erro instanceof Error
+          ? erro.message
+          : "Não foi possível processar a imagem.";
 
       mostrarMensagem(
-        `Erro ao registrar fotografia: ${bancoError.message}`,
+        `Erro ao processar imagem: ${mensagemErro}`,
         "erro"
       );
 
+    } finally {
+      /*
+       * Sempre libera o botão,
+       * mesmo quando ocorrer erro.
+       */
       if (
         botaoEnviar instanceof
         HTMLButtonElement
@@ -984,60 +1617,7 @@ async function verificarAdministrador() {
         botaoEnviar.textContent =
           "Enviar fotografia";
       }
-
-      return;
     }
-
-    /*
-     * Limpa o formulário.
-     */
-    if (
-      form instanceof
-      HTMLFormElement
-    ) {
-      form.reset();
-    }
-
-    /*
-     * Restaura os valores padrão.
-     */
-    if (
-      ativo instanceof
-      HTMLInputElement
-    ) {
-      ativo.checked = true;
-    }
-
-    if (
-      ordem instanceof
-      HTMLInputElement
-    ) {
-      ordem.value = "1";
-    }
-
-    /*
-     * Libera o botão.
-     */
-    if (
-      botaoEnviar instanceof
-      HTMLButtonElement
-    ) {
-      botaoEnviar.disabled =
-        false;
-
-      botaoEnviar.textContent =
-        "Enviar fotografia";
-    }
-
-    mostrarMensagem(
-      "Fotografia adicionada com sucesso!",
-      "sucesso"
-    );
-
-    /*
-     * Atualiza a lista.
-     */
-    await carregarFotos();
   }
 
   /*
